@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Garage Control</title>
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<style>
+:root{--bg:#0f0f0f;--card:#1a1a1a;--border:#2a2a2a;--text:#e8e8e8;--muted:#888;--accent:#3b82f6;--learn:#f59e0b;--success:#22c55e;--danger:#ef4444}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:20px 16px 40px}
+.header{text-align:center;margin-bottom:20px}
+.header h1{font-size:1.25rem;font-weight:600}
+.header .sub{font-size:.75rem;color:var(--muted);margin-top:4px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#666}
+.dot.on{background:var(--success);box-shadow:0 0 8px var(--success)}
+.tabs{display:flex;gap:8px;margin-bottom:20px;justify-content:center}
+.tab{flex:1;max-width:110px;padding:10px 8px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:.8rem;cursor:pointer}
+.tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.name-row{display:flex;gap:8px;margin-bottom:28px;max-width:360px;margin:0 auto 28px}
+.name-row input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-size:.95rem;outline:none}
+.name-row button{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0 16px;color:var(--text);font-size:.85rem;cursor:pointer}
+.controls{display:flex;gap:12px;justify-content:center;max-width:360px;margin:0 auto 20px}
+.btn{flex:1;aspect-ratio:1;max-width:100px;border:1px solid var(--border);border-radius:16px;background:var(--card);color:var(--text);font-size:1.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;-webkit-tap-highlight-color:transparent}
+.btn:active,.btn.pressed{background:var(--accent);border-color:var(--accent);transform:scale(.94)}
+.btn.selected{background:var(--learn);border-color:var(--learn);color:#111}
+.learn-wrap{max-width:200px;margin:0 auto 24px}
+.btn-learn{width:100%;padding:10px 12px;border:none;border-radius:10px;background:#333;color:var(--muted);font-size:.8rem;font-weight:500;cursor:pointer;user-select:none}
+.btn-learn.learning{background:var(--danger);color:#fff}
+.btn-learn.holding{background:var(--learn);color:#111}
+.hint{text-align:center;font-size:.72rem;color:var(--muted);max-width:320px;margin:0 auto;line-height:1.5}
+#toast{position:fixed;top:-60px;left:50%;transform:translateX(-50%);background:var(--success);color:#fff;padding:12px 28px;border-radius:10px;font-size:.9rem;font-weight:500;z-index:100;transition:top .35s ease;box-shadow:0 4px 20px rgba(34,197,94,.4)}
+#toast.show{top:20px}
+#countdown{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:200;flex-direction:column}
+#countdown.show{display:flex}
+#countdown .num{font-size:4rem;font-weight:700;color:var(--learn)}
+#countdown .label{margin-top:8px;color:var(--muted);font-size:.9rem}
+</style>
+</head>
+<body>
+<div id="toast">Command sent</div>
+<div id="countdown"><div class="num" id="cdNum">3</div><div class="label">Hold to enter Learn</div></div>
+
+<div class="header">
+  <h1>Garage Control</h1>
+  <div class="sub"><span class="dot" id="dot"></span><span id="conn">Connecting...</span></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" id="tab0" onclick="selectDoor(0)">1</button>
+  <button class="tab" id="tab1" onclick="selectDoor(1)">2</button>
+  <button class="tab" id="tab2" onclick="selectDoor(2)">3</button>
+</div>
+
+<div class="name-row">
+  <input type="text" id="doorName" maxlength="20" value="Parking 1">
+  <button onclick="saveName()">Save</button>
+</div>
+
+<div class="controls">
+  <button class="btn" id="btnUp" onclick="sendCmd('up')">▲</button>
+  <button class="btn" id="btnStop" onclick="sendCmd('stop')">⏹</button>
+  <button class="btn" id="btnDown" onclick="sendCmd('down')">▼</button>
+</div>
+
+<div class="learn-wrap">
+  <button class="btn-learn" id="btnLearn">Learn</button>
+</div>
+<p class="hint">Hold Learn 3s → choose ▲ ⏹ or ▼ → press remote</p>
+
+<script>
+/* ===== CONFIG — change DEVICE_ID to match Serial Monitor ===== */
+const DEVICE_ID = "YOUR_DEVICE_ID";   // e.g. "a1b2c3"
+const MQTT_WS   = "wss://broker.hivemq.com:8884/mqtt";
+
+const topicCmd    = `garage/${DEVICE_ID}/cmd`;
+const topicStatus = `garage/${DEVICE_ID}/status`;
+const topicState  = `garage/${DEVICE_ID}/state`;
+
+let client = null;
+let activeDoor = 0;
+let learnState = "idle";
+let learnTarget = "";
+let names = ["Parking 1", "Parking 2", "Parking 3"];
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg || "Command sent";
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2000);
+}
+
+function pressAnim(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add("pressed");
+  setTimeout(() => el.classList.remove("pressed"), 180);
+}
+
+function setConn(ok) {
+  document.getElementById("dot").className = "dot" + (ok ? " on" : "");
+  document.getElementById("conn").textContent = ok ? "Online" : "Offline";
+}
+
+function updateUI() {
+  for (let i = 0; i < 3; i++) {
+    document.getElementById("tab" + i).className = "tab" + (i === activeDoor ? " active" : "");
+  }
+  document.getElementById("doorName").value = names[activeDoor] || ("Parking " + (activeDoor + 1));
+
+  const learnBtn = document.getElementById("btnLearn");
+  learnBtn.className = "btn-learn" + (learnState !== "idle" ? " learning" : "");
+
+  ["up", "stop", "down"].forEach(t => {
+    const id = t === "up" ? "btnUp" : t === "down" ? "btnDown" : "btnStop";
+    const el = document.getElementById(id);
+    el.className = "btn" + (learnState !== "idle" && learnTarget === t ? " selected" : "");
+  });
+}
+
+function publish(obj) {
+  if (!client || !client.connected) {
+    showToast("Not connected");
+    return;
+  }
+  client.publish(topicCmd, JSON.stringify(obj));
+}
+
+function sendCmd(c) {
+  if (c === "up") pressAnim("btnUp");
+  if (c === "down") pressAnim("btnDown");
+  if (c === "stop") pressAnim("btnStop");
+
+  if (learnState === "wait_button") {
+    publish({ cmd: "learn_select", door: activeDoor, target: c });
+  } else {
+    publish({ cmd: c, door: activeDoor });
+  }
+}
+
+function selectDoor(n) {
+  activeDoor = n;
+  publish({ cmd: "select_door", door: n });
+  updateUI();
+}
+
+function saveName() {
+  const name = document.getElementById("doorName").value.trim();
+  if (!name) return;
+  publish({ cmd: "set_name", door: activeDoor, name });
+}
+
+/* Learn hold 3s */
+let holdTimer = null, countTimer = null, holding = false, holdLeft = 3;
+const learnBtn = document.getElementById("btnLearn");
+const cdOverlay = document.getElementById("countdown");
+const cdNum = document.getElementById("cdNum");
+
+function startHold(e) {
+  e.preventDefault();
+  if (learnState !== "idle") {
+    publish({ cmd: "learn_cancel", door: activeDoor });
+    return;
+  }
+  if (holding) return;
+  holding = true;
+  holdLeft = 3;
+  learnBtn.classList.add("holding");
+  cdNum.textContent = "3";
+  cdOverlay.classList.add("show");
+  countTimer = setInterval(() => {
+    holdLeft--;
+    if (holdLeft > 0) cdNum.textContent = holdLeft;
+  }, 1000);
+  holdTimer = setTimeout(() => {
+    clearInterval(countTimer);
+    cdOverlay.classList.remove("show");
+    learnBtn.classList.remove("holding");
+    holding = false;
+    publish({ cmd: "learn_start", door: activeDoor });
+  }, 3000);
+}
+function cancelHold(e) {
+  e.preventDefault();
+  if (!holding) return;
+  holding = false;
+  clearTimeout(holdTimer);
+  clearInterval(countTimer);
+  cdOverlay.classList.remove("show");
+  learnBtn.classList.remove("holding");
+}
+learnBtn.addEventListener("mousedown", startHold);
+learnBtn.addEventListener("mouseup", cancelHold);
+learnBtn.addEventListener("mouseleave", cancelHold);
+learnBtn.addEventListener("touchstart", startHold, { passive: false });
+learnBtn.addEventListener("touchend", cancelHold);
+learnBtn.addEventListener("touchcancel", cancelHold);
+
+/* MQTT */
+function connectMqtt() {
+  client = mqtt.connect(MQTT_WS, {
+    clientId: "web-" + Math.random().toString(16).slice(2, 10),
+    clean: true,
+    reconnectPeriod: 3000
+  });
+  client.on("connect", () => {
+    setConn(true);
+    client.subscribe(topicStatus);
+    client.subscribe(topicState);
+  });
+  client.on("reconnect", () => setConn(false));
+  client.on("close", () => setConn(false));
+  client.on("message", (topic, payload) => {
+    try {
+      const data = JSON.parse(payload.toString());
+      if (data.type === "ack" && data.msg) showToast(data.msg);
+      if (data.type === "state") {
+        if (typeof data.door === "number") activeDoor = data.door;
+        if (data.learn) learnState = data.learn;
+        if (data.target !== undefined) learnTarget = data.target || "";
+        if (Array.isArray(data.names)) names = data.names;
+        updateUI();
+      }
+    } catch (e) {}
+  });
+}
+
+if (DEVICE_ID === "YOUR_DEVICE_ID") {
+  document.getElementById("conn").textContent = "Set DEVICE_ID in index.html";
+} else {
+  connectMqtt();
+}
+updateUI();
+</script>
+</body>
+</html>
