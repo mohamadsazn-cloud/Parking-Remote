@@ -7,205 +7,40 @@
 <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
 <style>
 :root {
-  --bg: #0f0f0f;
-  --card: #1a1a1a;
-  --border: #2a2a2a;
-  --text: #e8e8e8;
-  --muted: #888;
-  --accent: #3b82f6;
-  --success: #22c55e;
-  --danger: #ef4444;
+  --bg:#0f0f0f; --card:#1a1a1a; --border:#2a2a2a; --text:#e8e8e8; --muted:#888;
+  --accent:#3b82f6; --success:#22c55e; --danger:#ef4444;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  padding: 20px 16px 40px;
-}
-.wrap { max-width: 420px; margin: 0 auto; }
-h1 {
-  text-align: center;
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-.sub {
-  text-align: center;
-  font-size: 0.78rem;
-  color: var(--muted);
-  margin-bottom: 18px;
-}
-.dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #555;
-  margin-right: 6px;
-  vertical-align: middle;
-}
-.dot.on {
-  background: var(--success);
-  box-shadow: 0 0 8px var(--success);
-}
-.toolbar {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 16px;
-}
-.refresh {
-  background: var(--card);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 10px;
-  padding: 8px 16px;
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-.refresh:active { border-color: var(--accent); }
-.tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 28px;
-}
-.tab {
-  flex: 1;
-  padding: 11px 8px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--muted);
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-.tab.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-.main {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 42vh;
-  gap: 18px;
-}
-.controls {
-  display: flex;
-  gap: 12px;
-  width: 100%;
-  max-width: 300px;
-  justify-content: center;
-}
-.btn {
-  flex: 1;
-  aspect-ratio: 1;
-  max-width: 96px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--card);
-  color: var(--text);
-  font-size: 1.7rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: 0.15s;
-  -webkit-tap-highlight-color: transparent;
-}
-.btn:active,
-.btn.pressed {
-  background: var(--accent);
-  border-color: var(--accent);
-  transform: scale(0.94);
-}
-.btn.selected {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35);
-}
-.learn-wrap { width: 100%; max-width: 180px; }
-.btn-learn {
-  width: 100%;
-  padding: 10px;
-  border: none;
-  border-radius: 10px;
-  background: #2a2a2a;
-  color: var(--muted);
-  font-size: 0.8rem;
-  font-weight: 500;
-  cursor: pointer;
-  user-select: none;
-}
-.btn-learn.learning { background: var(--danger); color: #fff; }
-.btn-learn.holding { background: var(--accent); color: #fff; }
-.hint {
-  text-align: center;
-  font-size: 0.7rem;
-  color: var(--muted);
-  line-height: 1.45;
-  max-width: 280px;
-}
-.credit {
-  text-align: center;
-  margin-top: 28px;
-  font-size: 0.68rem;
-  color: #555;
-}
-#toast {
-  position: fixed;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%) translateY(-120%);
-  z-index: 9999;
-  min-width: 140px;
-  max-width: 90%;
-  padding: 10px 18px;
-  border-radius: 10px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-align: center;
-  pointer-events: none;
-  opacity: 0;
-  transition: transform 0.25s ease, opacity 0.25s ease;
-  background: #14532d;
-  color: #bbf7d0;
-  border: 1px solid #166534;
-}
-#toast.show {
-  transform: translateX(-50%) translateY(0);
-  opacity: 1;
-}
-#toast.err {
-  background: #450a0a;
-  color: #fecaca;
-  border-color: #7f1d1d;
-}
-#countdown {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  z-index: 200;
-}
-#countdown.show { display: flex; }
-#countdown .num {
-  font-size: 4rem;
-  font-weight: 700;
-  color: var(--accent);
-}
-#countdown .label {
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:20px 16px 40px}
+.wrap{max-width:420px;margin:0 auto}
+h1{text-align:center;font-size:1.25rem;font-weight:600;margin-bottom:6px}
+.sub{text-align:center;font-size:.78rem;color:var(--muted);margin-bottom:18px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#555;margin-right:6px;vertical-align:middle}
+.dot.on{background:var(--success);box-shadow:0 0 8px var(--success)}
+.toolbar{display:flex;justify-content:center;margin-bottom:16px}
+.refresh{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:8px 16px;font-size:.8rem;cursor:pointer}
+.refresh:active{border-color:var(--accent)}
+.tabs{display:flex;gap:8px;margin-bottom:28px}
+.tab{flex:1;padding:11px 8px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:.85rem;cursor:pointer}
+.tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.main{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:42vh;gap:18px}
+.controls{display:flex;gap:12px;width:100%;max-width:300px;justify-content:center}
+.btn{flex:1;aspect-ratio:1;max-width:96px;border:1px solid var(--border);border-radius:16px;background:var(--card);color:var(--text);font-size:1.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;-webkit-tap-highlight-color:transparent}
+.btn:active,.btn.pressed{background:var(--accent);border-color:var(--accent);transform:scale(.94)}
+.btn.selected{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 2px rgba(59,130,246,.35)}
+.learn-wrap{width:100%;max-width:180px}
+.btn-learn{width:100%;padding:10px;border:none;border-radius:10px;background:#2a2a2a;color:var(--muted);font-size:.8rem;font-weight:500;cursor:pointer;user-select:none}
+.btn-learn.learning{background:var(--danger);color:#fff}
+.btn-learn.holding{background:var(--accent);color:#fff}
+.hint{text-align:center;font-size:.7rem;color:var(--muted);line-height:1.45;max-width:280px}
+.credit{text-align:center;margin-top:28px;font-size:.68rem;color:#555}
+#toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-120%);z-index:9999;min-width:140px;max-width:90%;padding:10px 18px;border-radius:10px;font-size:.85rem;font-weight:600;text-align:center;pointer-events:none;opacity:0;transition:transform .25s,opacity .25s;background:#14532d;color:#bbf7d0;border:1px solid #166534}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+#toast.err{background:#450a0a;color:#fecaca;border-color:#7f1d1d}
+#countdown{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:200}
+#countdown.show{display:flex}
+#countdown .num{font-size:4rem;font-weight:700;color:var(--accent)}
+#countdown .label{margin-top:8px;color:var(--muted);font-size:.9rem}
 </style>
 </head>
 <body>
@@ -222,17 +57,14 @@ h1 {
     &nbsp;·&nbsp;
     <span class="dot" id="dotDev"></span><span id="txtDev">Device —</span>
   </p>
-
   <div class="toolbar">
     <button class="refresh" onclick="pingDevice(true)">↻ Refresh</button>
   </div>
-
   <div class="tabs">
     <button class="tab active" id="tab0" onclick="selectDoor(0)">1</button>
     <button class="tab" id="tab1" onclick="selectDoor(1)">2</button>
     <button class="tab" id="tab2" onclick="selectDoor(2)">3</button>
   </div>
-
   <div class="main">
     <div class="controls">
       <button class="btn" id="btnUp" onclick="sendCmd('up')">▲</button>
@@ -244,19 +76,19 @@ h1 {
     </div>
     <p class="hint">Hold Learn 3s → choose ▲ ⏹ or ▼ → press remote</p>
   </div>
-
   <p class="credit">Designed &amp; built by M.S.A</p>
 </div>
 
 <script>
-/* ========== CONFIG ========== */
 const GARAGE_DEVICE_ID = "417ca1";
-const BROKER_URLS = [
-  "wss://broker.hivemq.com:8884/mqtt",
-  "ws://broker.hivemq.com:8000/mqtt"
-];
-const PING_TIMEOUT_MS = 4000;
 
+/* بروکر خودتان — WebSocket */
+const BROKER_URLS = [
+  "ws://130.185.74.211:9001/mqtt",
+  "ws://130.185.74.211:8083/mqtt"
+];
+
+const PING_TIMEOUT_MS = 4000;
 const topicCmd    = `garage/${GARAGE_DEVICE_ID}/cmd`;
 const topicStatus = `garage/${GARAGE_DEVICE_ID}/status`;
 const topicState  = `garage/${GARAGE_DEVICE_ID}/state`;
@@ -266,12 +98,10 @@ let mqttOk = false;
 let deviceOk = false;
 let pingTimer = null;
 let toastTimer = null;
-
 let activeDoor = 0;
-let learnState = "idle";   // idle | wait_button | wait_rf
+let learnState = "idle";
 let learnTarget = "";
 
-/* ========== UI helpers ========== */
 function showToast(text, isError) {
   const el = document.getElementById("toast");
   el.textContent = text;
@@ -285,19 +115,15 @@ function showToast(text, isError) {
 function setConnUI() {
   document.getElementById("dotMqtt").className = "dot" + (mqttOk ? " on" : "");
   document.getElementById("txtMqtt").textContent = mqttOk ? "Connected" : "Disconnected";
-
   document.getElementById("dotDev").className = "dot" + (deviceOk ? " on" : "");
   document.getElementById("txtDev").textContent = deviceOk ? "Online" : "Offline";
 }
 
 function updateDoorUI() {
-  for (let i = 0; i < 3; i++) {
-    document.getElementById("tab" + i).className =
-      "tab" + (i === activeDoor ? " active" : "");
-  }
+  for (let i = 0; i < 3; i++)
+    document.getElementById("tab" + i).className = "tab" + (i === activeDoor ? " active" : "");
   document.getElementById("btnLearn").className =
     "btn-learn" + (learnState !== "idle" ? " learning" : "");
-
   ["up", "stop", "down"].forEach((t) => {
     const id = t === "up" ? "btnUp" : t === "down" ? "btnDown" : "btnStop";
     document.getElementById(id).className =
@@ -312,12 +138,8 @@ function pressAnim(id) {
   setTimeout(() => el.classList.remove("pressed"), 180);
 }
 
-/* ========== MQTT ========== */
 function publish(obj) {
-  if (!client || !mqttOk) {
-    showToast("Not connected", true);
-    return;
-  }
+  if (!client || !mqttOk) { showToast("Not connected", true); return; }
   client.publish(topicCmd, JSON.stringify(obj));
 }
 
@@ -332,7 +154,6 @@ function pingDevice(fromButton) {
   document.getElementById("txtDev").textContent = "Checking…";
   document.getElementById("dotDev").className = "dot";
   publish({ cmd: "ping" });
-
   clearTimeout(pingTimer);
   pingTimer = setTimeout(() => {
     if (!deviceOk) {
@@ -356,14 +177,18 @@ function connectMQTT(i) {
     document.getElementById("txtMqtt").textContent = "Connection failed";
     return;
   }
-  if (client) {
-    try { client.end(true); } catch (e) {}
-  }
-  client = mqtt.connect(BROKER_URLS[i], {
+  if (client) try { client.end(true); } catch (e) {}
+
+  const url = BROKER_URLS[i];
+  console.log("MQTT try:", url);
+  client = mqtt.connect(url, {
     clientId: "park_" + Math.random().toString(16).slice(2, 10),
     clean: true,
     connectTimeout: 8000,
     reconnectPeriod: 0
+    // اگر user/pass دارید:
+    // username: "xxx",
+    // password: "yyy"
   });
 
   client.on("connect", () => {
@@ -375,15 +200,10 @@ function connectMQTT(i) {
   });
 
   client.on("message", (topic, payload) => {
-    const raw = payload.toString();
     try {
-      const data = JSON.parse(raw);
-      if (data.type === "ack" || data.type === "state") {
-        markDeviceOnline();
-      }
-      if (data.type === "ack" && data.msg) {
-        if (data.msg !== "pong") showToast(data.msg);
-      }
+      const data = JSON.parse(payload.toString());
+      if (data.type === "ack" || data.type === "state") markDeviceOnline();
+      if (data.type === "ack" && data.msg && data.msg !== "pong") showToast(data.msg);
       if (data.type === "state") {
         if (typeof data.door === "number") activeDoor = data.door;
         if (data.learn) learnState = data.learn;
@@ -394,12 +214,10 @@ function connectMQTT(i) {
   });
 
   client.on("close", () => {
-    if (mqttOk) {
-      mqttOk = false;
-      deviceOk = false;
-      setConnUI();
-    }
+    if (mqttOk) { mqttOk = false; deviceOk = false; setConnUI(); }
   });
+
+  client.on("error", (err) => console.log("MQTT error", err));
 
   setTimeout(() => {
     if (!mqttOk) {
@@ -409,7 +227,6 @@ function connectMQTT(i) {
   }, 8500);
 }
 
-/* ========== Commands ========== */
 function selectDoor(n) {
   activeDoor = n;
   publish({ cmd: "select_door", door: n });
@@ -419,20 +236,13 @@ function selectDoor(n) {
 function sendCmd(c) {
   const map = { up: "btnUp", down: "btnDown", stop: "btnStop" };
   pressAnim(map[c]);
-
-  if (learnState === "wait_button") {
+  if (learnState === "wait_button")
     publish({ cmd: "learn_select", door: activeDoor, target: c });
-  } else {
+  else
     publish({ cmd: c, door: activeDoor });
-  }
 }
 
-/* ========== Learn hold 3s ========== */
-let holdTimer = null;
-let countTimer = null;
-let holding = false;
-let holdLeft = 3;
-
+let holdTimer = null, countTimer = null, holding = false, holdLeft = 3;
 const learnBtn = document.getElementById("btnLearn");
 const cdOverlay = document.getElementById("countdown");
 const cdNum = document.getElementById("cdNum");
@@ -479,7 +289,6 @@ learnBtn.addEventListener("touchstart", startHold, { passive: false });
 learnBtn.addEventListener("touchend", cancelHold);
 learnBtn.addEventListener("touchcancel", cancelHold);
 
-/* ========== Start ========== */
 updateDoorUI();
 setConnUI();
 connectMQTT(0);
