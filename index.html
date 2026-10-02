@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Parking Doors</title>
+<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<style>
+:root {
+  --bg: #0f0f0f;
+  --card: #1a1a1a;
+  --border: #2a2a2a;
+  --text: #e8e8e8;
+  --muted: #888;
+  --accent: #3b82f6;
+  --success: #22c55e;
+  --danger: #ef4444;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px 16px 40px;
+}
+.wrap { max-width: 420px; margin: 0 auto; }
+h1 {
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.sub {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #555;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.dot.on {
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
+}
+.toolbar {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.refresh {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.refresh:active { border-color: var(--accent); }
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+.tab {
+  flex: 1;
+  padding: 11px 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 42vh;
+  gap: 18px;
+}
+.controls {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 300px;
+  justify-content: center;
+}
+.btn {
+  flex: 1;
+  aspect-ratio: 1;
+  max-width: 96px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 1.7rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active,
+.btn.pressed {
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: scale(0.94);
+}
+.btn.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35);
+}
+.learn-wrap { width: 100%; max-width: 180px; }
+.btn-learn {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  background: #2a2a2a;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+}
+.btn-learn.learning { background: var(--danger); color: #fff; }
+.btn-learn.holding { background: var(--accent); color: #fff; }
+.hint {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.45;
+  max-width: 280px;
+}
+.credit {
+  text-align: center;
+  margin-top: 28px;
+  font-size: 0.68rem;
+  color: #555;
+}
+#toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-120%);
+  z-index: 9999;
+  min-width: 140px;
+  max-width: 90%;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  background: #14532d;
+  color: #bbf7d0;
+  border: 1px solid #166534;
+}
+#toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+#toast.err {
+  background: #450a0a;
+  color: #fecaca;
+  border-color: #7f1d1d;
+}
+#countdown {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  z-index: 200;
+}
+#countdown.show { display: flex; }
+#countdown .num {
+  font-size: 4rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+#countdown .label {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div id="countdown">
+  <div class="num" id="cdNum">3</div>
+  <div class="label">Hold to enter Learn</div>
+</div>
+
+<div class="wrap">
+  <h1>Parking Doors</h1>
+  <p class="sub">
+    <span class="dot" id="dotMqtt"></span><span id="txtMqtt">Connecting…</span>
+    &nbsp;·&nbsp;
+    <span class="dot" id="dotDev"></span><span id="txtDev">Device —</span>
+  </p>
+
+  <div class="toolbar">
+    <button class="refresh" onclick="pingDevice(true)">↻ Refresh</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tab0" onclick="selectDoor(0)">1</button>
+    <button class="tab" id="tab1" onclick="selectDoor(1)">2</button>
+    <button class="tab" id="tab2" onclick="selectDoor(2)">3</button>
+  </div>
+
+  <div class="main">
+    <div class="controls">
+      <button class="btn" id="btnUp" onclick="sendCmd('up')">▲</button>
+      <button class="btn" id="btnStop" onclick="sendCmd('stop')">⏹</button>
+      <button class="btn" id="btnDown" onclick="sendCmd('down')">▼</button>
+    </div>
+    <div class="learn-wrap">
+      <button class="btn-learn" id="btnLearn">Learn</button>
+    </div>
+    <p class="hint">Hold Learn 3s → choose ▲ ⏹ or ▼ → press remote</p>
+  </div>
+
+  <p class="credit">Designed &amp; built by M.S.A</p>
+</div>
+
+<script>
+/* ========== CONFIG ========== */
+const GARAGE_DEVICE_ID = "417ca1";
+const BROKER_URLS = [
+  "wss://broker.hivemq.com:8884/mqtt",
+  "ws://broker.hivemq.com:8000/mqtt"
+];
+const PING_TIMEOUT_MS = 4000;
+
+const topicCmd    = `garage/${GARAGE_DEVICE_ID}/cmd`;
+const topicStatus = `garage/${GARAGE_DEVICE_ID}/status`;
+const topicState  = `garage/${GARAGE_DEVICE_ID}/state`;
+
+let client = null;
+let mqttOk = false;
+let deviceOk = false;
+let pingTimer = null;
+let toastTimer = null;
+
+let activeDoor = 0;
+let learnState = "idle";   // idle | wait_button | wait_rf
+let learnTarget = "";
+
+/* ========== UI helpers ========== */
+function showToast(text, isError) {
+  const el = document.getElementById("toast");
+  el.textContent = text;
+  el.className = "toast" + (isError ? " err" : "");
+  void el.offsetWidth;
+  el.classList.add("show");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2000);
+}
+
+function setConnUI() {
+  document.getElementById("dotMqtt").className = "dot" + (mqttOk ? " on" : "");
+  document.getElementById("txtMqtt").textContent = mqttOk ? "Connected" : "Disconnected";
+
+  document.getElementById("dotDev").className = "dot" + (deviceOk ? " on" : "");
+  document.getElementById("txtDev").textContent = deviceOk ? "Online" : "Offline";
+}
+
+function updateDoorUI() {
+  for (let i = 0; i < 3; i++) {
+    document.getElementById("tab" + i).className =
+      "tab" + (i === activeDoor ? " active" : "");
+  }
+  document.getElementById("btnLearn").className =
+    "btn-learn" + (learnState !== "idle" ? " learning" : "");
+
+  ["up", "stop", "down"].forEach((t) => {
+    const id = t === "up" ? "btnUp" : t === "down" ? "btnDown" : "btnStop";
+    document.getElementById(id).className =
+      "btn" + (learnState !== "idle" && learnTarget === t ? " selected" : "");
+  });
+}
+
+function pressAnim(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add("pressed");
+  setTimeout(() => el.classList.remove("pressed"), 180);
+}
+
+/* ========== MQTT ========== */
+function publish(obj) {
+  if (!client || !mqttOk) {
+    showToast("Not connected", true);
+    return;
+  }
+  client.publish(topicCmd, JSON.stringify(obj));
+}
+
+function pingDevice(fromButton) {
+  if (!mqttOk) {
+    deviceOk = false;
+    setConnUI();
+    if (fromButton) showToast("MQTT offline", true);
+    return;
+  }
+  deviceOk = false;
+  document.getElementById("txtDev").textContent = "Checking…";
+  document.getElementById("dotDev").className = "dot";
+  publish({ cmd: "ping" });
+
+  clearTimeout(pingTimer);
+  pingTimer = setTimeout(() => {
+    if (!deviceOk) {
+      setConnUI();
+      if (fromButton) showToast("Device offline", true);
+    }
+  }, PING_TIMEOUT_MS);
+}
+
+function markDeviceOnline() {
+  deviceOk = true;
+  clearTimeout(pingTimer);
+  setConnUI();
+}
+
+function connectMQTT(i) {
+  if (i >= BROKER_URLS.length) {
+    mqttOk = false;
+    deviceOk = false;
+    setConnUI();
+    document.getElementById("txtMqtt").textContent = "Connection failed";
+    return;
+  }
+  if (client) {
+    try { client.end(true); } catch (e) {}
+  }
+  client = mqtt.connect(BROKER_URLS[i], {
+    clientId: "park_" + Math.random().toString(16).slice(2, 10),
+    clean: true,
+    connectTimeout: 8000,
+    reconnectPeriod: 0
+  });
+
+  client.on("connect", () => {
+    mqttOk = true;
+    setConnUI();
+    client.subscribe(topicStatus);
+    client.subscribe(topicState);
+    setTimeout(() => pingDevice(false), 300);
+  });
+
+  client.on("message", (topic, payload) => {
+    const raw = payload.toString();
+    try {
+      const data = JSON.parse(raw);
+      if (data.type === "ack" || data.type === "state") {
+        markDeviceOnline();
+      }
+      if (data.type === "ack" && data.msg) {
+        if (data.msg !== "pong") showToast(data.msg);
+      }
+      if (data.type === "state") {
+        if (typeof data.door === "number") activeDoor = data.door;
+        if (data.learn) learnState = data.learn;
+        if (data.target !== undefined) learnTarget = data.target || "";
+        updateDoorUI();
+      }
+    } catch (e) {}
+  });
+
+  client.on("close", () => {
+    if (mqttOk) {
+      mqttOk = false;
+      deviceOk = false;
+      setConnUI();
+    }
+  });
+
+  setTimeout(() => {
+    if (!mqttOk) {
+      try { client.end(true); } catch (e) {}
+      connectMQTT(i + 1);
+    }
+  }, 8500);
+}
+
+/* ========== Commands ========== */
+function selectDoor(n) {
+  activeDoor = n;
+  publish({ cmd: "select_door", door: n });
+  updateDoorUI();
+}
+
+function sendCmd(c) {
+  const map = { up: "btnUp", down: "btnDown", stop: "btnStop" };
+  pressAnim(map[c]);
+
+  if (learnState === "wait_button") {
+    publish({ cmd: "learn_select", door: activeDoor, target: c });
+  } else {
+    publish({ cmd: c, door: activeDoor });
+  }
+}
+
+/* ========== Learn hold 3s ========== */
+let holdTimer = null;
+let countTimer = null;
+let holding = false;
+let holdLeft = 3;
+
+const learnBtn = document.getElementById("btnLearn");
+const cdOverlay = document.getElementById("countdown");
+const cdNum = document.getElementById("cdNum");
+
+function startHold(e) {
+  e.preventDefault();
+  if (learnState !== "idle") {
+    publish({ cmd: "learn_cancel", door: activeDoor });
+    return;
+  }
+  if (holding) return;
+  holding = true;
+  holdLeft = 3;
+  learnBtn.classList.add("holding");
+  cdNum.textContent = "3";
+  cdOverlay.classList.add("show");
+  countTimer = setInterval(() => {
+    holdLeft--;
+    if (holdLeft > 0) cdNum.textContent = holdLeft;
+  }, 1000);
+  holdTimer = setTimeout(() => {
+    clearInterval(countTimer);
+    cdOverlay.classList.remove("show");
+    learnBtn.classList.remove("holding");
+    holding = false;
+    publish({ cmd: "learn_start", door: activeDoor });
+  }, 3000);
+}
+
+function cancelHold(e) {
+  e.preventDefault();
+  if (!holding) return;
+  holding = false;
+  clearTimeout(holdTimer);
+  clearInterval(countTimer);
+  cdOverlay.classList.remove("show");
+  learnBtn.classList.remove("holding");
+}
+
+learnBtn.addEventListener("mousedown", startHold);
+learnBtn.addEventListener("mouseup", cancelHold);
+learnBtn.addEventListener("mouseleave", cancelHold);
+learnBtn.addEventListener("touchstart", startHold, { passive: false });
+learnBtn.addEventListener("touchend", cancelHold);
+learnBtn.addEventListener("touchcancel", cancelHold);
+
+/* ========== Start ========== */
+updateDoorUI();
+setConnUI();
+connectMQTT(0);
+</script>
+</body>
+</html>
