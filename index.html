@@ -71,12 +71,14 @@ h1{text-align:center;font-size:1.25rem;font-weight:600;margin-bottom:6px}
 </div>
 <script>
 const GARAGE_DEVICE_ID = "417ca1";
+
 const BROKER_URLS = [
-  "ws://130.185.74.211:9001/mqtt",
-  "ws://130.185.74.211:8083/mqtt"
+  "wss://broker.emqx.io:8084/mqtt",
+  "wss://broker.hivemq.com:8884/mqtt"
 ];
-const MQTT_USER = "gateway";
-const MQTT_PASS = "Gw@2026#Mqtt!";
+
+const MQTT_USER = "";  // خالی
+const MQTT_PASS = "";  // خالی
 const PING_TIMEOUT_MS = 4000;
 
 const topicCmd = `garage/${GARAGE_DEVICE_ID}/cmd`;
