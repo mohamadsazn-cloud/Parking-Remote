@@ -19,7 +19,7 @@ h1{text-align:center;font-size:1.25rem;font-weight:600;margin-bottom:6px}
 .tabs{display:flex;gap:8px;margin-bottom:28px}
 .tab{flex:1;padding:11px 8px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:.85rem;cursor:pointer}
 .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
-.main{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:42vh;gap:18px}
+.main{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:38vh;gap:18px}
 .controls{display:flex;gap:12px;width:100%;max-width:300px;justify-content:center}
 .btn{flex:1;aspect-ratio:1;max-width:96px;border:1px solid var(--border);border-radius:16px;background:var(--card);color:var(--text);font-size:1.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .btn:active,.btn.pressed{background:var(--accent);transform:scale(.94)}
@@ -28,7 +28,8 @@ h1{text-align:center;font-size:1.25rem;font-weight:600;margin-bottom:6px}
 .btn-learn.learning{background:var(--danger);color:#fff}
 .btn-learn.holding{background:var(--accent);color:#fff}
 .hint{text-align:center;font-size:.7rem;color:var(--muted)}
-.credit{text-align:center;margin-top:28px;font-size:.68rem;color:#555}
+.credit{text-align:center;margin-top:20px;font-size:.68rem;color:#555}
+#log{margin-top:24px;padding:10px 12px;border-radius:8px;background:#121212;border:1px solid #1e1e1e;font-family:ui-monospace,Consolas,monospace;font-size:0.65rem;color:#3a3a3a;line-height:1.45;max-height:140px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
 #toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-120%);z-index:9999;padding:10px 18px;border-radius:10px;font-size:.85rem;font-weight:600;opacity:0;transition:.25s;background:#14532d;color:#bbf7d0}
 #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 #toast.err{background:#450a0a;color:#fecaca}
@@ -47,7 +48,9 @@ h1{text-align:center;font-size:1.25rem;font-weight:600;margin-bottom:6px}
     &nbsp;·&nbsp;
     <span class="dot" id="dotDev"></span><span id="txtDev">Device —</span>
   </p>
-  <div class="toolbar"><button class="refresh" type="button" onclick="pingDevice(true)">↻ Refresh</button></div>
+  <div class="toolbar">
+    <button class="refresh" type="button" onclick="pingDevice(true)">↻ Refresh</button>
+  </div>
   <div class="tabs">
     <button class="tab active" type="button" id="tab0" onclick="selectDoor(0)">1</button>
     <button class="tab" type="button" id="tab1" onclick="selectDoor(1)">2</button>
@@ -63,125 +66,194 @@ h1{text-align:center;font-size:1.25rem;font-weight:600;margin-bottom:6px}
     <p class="hint">Hold Learn 3s → choose ▲ ⏹ or ▼ → press remote</p>
   </div>
   <p class="credit">Designed &amp; built by M.S.A</p>
+  <div id="log"></div>
 </div>
 <script>
 const GARAGE_DEVICE_ID = "417ca1";
-/* همان ترتیب عمومی ESP — فقط WSS (برای GitHub) */
-const BROKER_URLS = [
-  "wss://test.mosquitto.org:8081/mqtt",
-  "wss://broker.emqx.io:8084/mqtt",
-  "wss://broker.hivemq.com:8884/mqtt"
-];
+const BROKER_URL = "wss://broker.emqx.io:8084/mqtt";
 const PING_TIMEOUT_MS = 5000;
 
 const topicCmd = "garage/" + GARAGE_DEVICE_ID + "/cmd";
 const topicStatus = "garage/" + GARAGE_DEVICE_ID + "/status";
 const topicState = "garage/" + GARAGE_DEVICE_ID + "/state";
 
-var client=null, mqttOk=false, deviceOk=false, pingTimer=null, toastTimer=null, brokerFailTimer=null;
-var activeDoor=0, learnState="idle", learnTarget="", brokerIndex=0;
+var client = null, mqttOk = false, deviceOk = false;
+var pingTimer = null, toastTimer = null;
+var activeDoor = 0, learnState = "idle", learnTarget = "";
 
-function showToast(t,err){var e=document.getElementById("toast");e.textContent=t;e.className="toast"+(err?" err":"");void e.offsetWidth;e.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(function(){e.classList.remove("show");},2000);}
-function setConnUI(){
-  document.getElementById("dotMqtt").className="dot"+(mqttOk?" on":"");
-  document.getElementById("txtMqtt").textContent=mqttOk?"Connected":"Disconnected";
-  document.getElementById("dotDev").className="dot"+(deviceOk?" on":"");
-  document.getElementById("txtDev").textContent=deviceOk?"Online":"Offline";
+function log(msg) {
+  var el = document.getElementById("log");
+  var t = new Date().toLocaleTimeString();
+  el.textContent += "[" + t + "] " + msg + "\n";
+  el.scrollTop = el.scrollHeight;
+  console.log(msg);
 }
-function updateDoorUI(){
-  for(var i=0;i<3;i++) document.getElementById("tab"+i).className="tab"+(i===activeDoor?" active":"");
-  document.getElementById("btnLearn").className="btn-learn"+(learnState!=="idle"?" learning":"");
-  ["up","stop","down"].forEach(function(t){
-    var id=t==="up"?"btnUp":t==="down"?"btnDown":"btnStop";
-    document.getElementById(id).className="btn"+(learnState!=="idle"&&learnTarget===t?" selected":"");
+
+function showToast(t, err) {
+  var e = document.getElementById("toast");
+  e.textContent = t;
+  e.className = "toast" + (err ? " err" : "");
+  void e.offsetWidth;
+  e.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { e.classList.remove("show"); }, 2000);
+}
+
+function setConnUI() {
+  document.getElementById("dotMqtt").className = "dot" + (mqttOk ? " on" : "");
+  document.getElementById("txtMqtt").textContent = mqttOk ? "Connected" : "Disconnected";
+  document.getElementById("dotDev").className = "dot" + (deviceOk ? " on" : "");
+  document.getElementById("txtDev").textContent = deviceOk ? "Online" : "Offline";
+}
+
+function updateDoorUI() {
+  for (var i = 0; i < 3; i++)
+    document.getElementById("tab" + i).className = "tab" + (i === activeDoor ? " active" : "");
+  document.getElementById("btnLearn").className =
+    "btn-learn" + (learnState !== "idle" ? " learning" : "");
+  ["up", "stop", "down"].forEach(function (t) {
+    var id = t === "up" ? "btnUp" : t === "down" ? "btnDown" : "btnStop";
+    document.getElementById(id).className =
+      "btn" + (learnState !== "idle" && learnTarget === t ? " selected" : "");
   });
 }
-function pressAnim(id){var el=document.getElementById(id);if(!el)return;el.classList.add("pressed");setTimeout(function(){el.classList.remove("pressed");},180);}
-function publish(o){if(!client||!mqttOk){showToast("Not connected",true);return;}client.publish(topicCmd,JSON.stringify(o));}
-function pingDevice(fromBtn){
-  if(!mqttOk){deviceOk=false;setConnUI();if(fromBtn)showToast("MQTT offline",true);return;}
-  deviceOk=false;document.getElementById("txtDev").textContent="Checking…";document.getElementById("dotDev").className="dot";
-  publish({cmd:"ping"});
-  clearTimeout(pingTimer);
-  pingTimer=setTimeout(function(){if(!deviceOk){setConnUI();if(fromBtn)showToast("Device offline",true);}},PING_TIMEOUT_MS);
-}
-function markOnline(){deviceOk=true;clearTimeout(pingTimer);clearTimeout(brokerFailTimer);setConnUI();}
 
-function connectMQTT(i){
-  if(i>=BROKER_URLS.length){
-    mqttOk=false;deviceOk=false;setConnUI();
-    document.getElementById("txtMqtt").textContent="Connection failed";
+function pressAnim(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add("pressed");
+  setTimeout(function () { el.classList.remove("pressed"); }, 180);
+}
+
+function publish(o) {
+  if (!client || !mqttOk) { showToast("Not connected", true); return; }
+  client.publish(topicCmd, JSON.stringify(o));
+}
+
+function pingDevice(fromBtn) {
+  if (!mqttOk) {
+    deviceOk = false; setConnUI();
+    if (fromBtn) showToast("MQTT offline", true);
     return;
   }
-  if(client) try{client.end(true);}catch(e){}
-  brokerIndex=i;
-  var url=BROKER_URLS[i];
-  console.log("MQTT try",i,url);
-  client=mqtt.connect(url,{
-    clientId:"park_"+Math.random().toString(16).slice(2,10),
-    clean:true,connectTimeout:10000,reconnectPeriod:0
+  deviceOk = false;
+  document.getElementById("txtDev").textContent = "Checking…";
+  document.getElementById("dotDev").className = "dot";
+  log("ping → device");
+  publish({ cmd: "ping" });
+  clearTimeout(pingTimer);
+  pingTimer = setTimeout(function () {
+    if (!deviceOk) {
+      setConnUI();
+      log("ping timeout — device offline");
+      if (fromBtn) showToast("Device offline", true);
+    }
+  }, PING_TIMEOUT_MS);
+}
+
+function markOnline() {
+  deviceOk = true;
+  clearTimeout(pingTimer);
+  setConnUI();
+  log("device online");
+}
+
+function connectMQTT() {
+  if (client) try { client.end(true); } catch (e) {}
+  log("connecting " + BROKER_URL);
+  client = mqtt.connect(BROKER_URL, {
+    clientId: "park_" + Math.random().toString(16).slice(2, 10),
+    clean: true,
+    connectTimeout: 12000,
+    reconnectPeriod: 5000
   });
-  client.on("connect",function(){
-    mqttOk=true;setConnUI();
-    client.subscribe(topicStatus);client.subscribe(topicState);
-    setTimeout(function(){pingDevice(false);},400);
-    clearTimeout(brokerFailTimer);
-    brokerFailTimer=setTimeout(function(){
-      if(!deviceOk && mqttOk){
-        console.log("No device on broker, next");
-        try{client.end(true);}catch(e){}
-        mqttOk=false;setConnUI();
-        connectMQTT(i+1);
-      }
-    },6000);
+  client.on("connect", function () {
+    mqttOk = true;
+    setConnUI();
+    log("MQTT connected (emqx)");
+    client.subscribe(topicStatus);
+    client.subscribe(topicState);
+    setTimeout(function () { pingDevice(false); }, 400);
   });
-  client.on("message",function(t,p){
-    try{
-      var d=JSON.parse(p.toString());
-      if(d.type==="ack"||d.type==="state") markOnline();
-      if(d.type==="ack"&&d.msg&&d.msg!=="pong") showToast(d.msg);
-      if(d.type==="state"){
-        if(typeof d.door==="number") activeDoor=d.door;
-        if(d.learn) learnState=d.learn;
-        if(d.target!==undefined) learnTarget=d.target||"";
+  client.on("message", function (t, p) {
+    try {
+      var d = JSON.parse(p.toString());
+      if (d.type === "ack" || d.type === "state") markOnline();
+      if (d.type === "ack" && d.msg && d.msg !== "pong") showToast(d.msg);
+      if (d.type === "state") {
+        if (typeof d.door === "number") activeDoor = d.door;
+        if (d.learn) learnState = d.learn;
+        if (d.target !== undefined) learnTarget = d.target || "";
         updateDoorUI();
       }
-    }catch(e){}
+    } catch (e) {}
   });
-  client.on("close",function(){if(mqttOk){mqttOk=false;deviceOk=false;setConnUI();}});
-  setTimeout(function(){
-    if(!mqttOk){try{client.end(true);}catch(e){} connectMQTT(i+1);}
-  },11000);
+  client.on("error", function (err) {
+    log("error: " + (err && err.message ? err.message : String(err)));
+  });
+  client.on("close", function () {
+    if (mqttOk) {
+      mqttOk = false; deviceOk = false; setConnUI();
+      log("connection closed");
+    }
+  });
 }
 
-function selectDoor(n){activeDoor=n;publish({cmd:"select_door",door:n});updateDoorUI();}
-function sendCmd(c){
-  pressAnim(c==="up"?"btnUp":c==="down"?"btnDown":"btnStop");
-  if(learnState==="wait_button") publish({cmd:"learn_select",door:activeDoor,target:c});
-  else publish({cmd:c,door:activeDoor});
+function selectDoor(n) {
+  activeDoor = n;
+  publish({ cmd: "select_door", door: n });
+  updateDoorUI();
 }
 
-var holdTimer=null,countTimer=null,holding=false,holdLeft=3;
-var learnBtn=document.getElementById("btnLearn"),cd=document.getElementById("countdown"),cdNum=document.getElementById("cdNum");
-function startHold(e){
+function sendCmd(c) {
+  pressAnim(c === "up" ? "btnUp" : c === "down" ? "btnDown" : "btnStop");
+  if (learnState === "wait_button")
+    publish({ cmd: "learn_select", door: activeDoor, target: c });
+  else
+    publish({ cmd: c, door: activeDoor });
+}
+
+var holdTimer = null, countTimer = null, holding = false, holdLeft = 3;
+var learnBtn = document.getElementById("btnLearn");
+var cd = document.getElementById("countdown");
+var cdNum = document.getElementById("cdNum");
+
+function startHold(e) {
   e.preventDefault();
-  if(learnState!=="idle"){publish({cmd:"learn_cancel",door:activeDoor});return;}
-  if(holding)return;
-  holding=true;holdLeft=3;learnBtn.classList.add("holding");cdNum.textContent="3";cd.classList.add("show");
-  countTimer=setInterval(function(){holdLeft--;if(holdLeft>0)cdNum.textContent=holdLeft;},1000);
-  holdTimer=setTimeout(function(){
-    clearInterval(countTimer);cd.classList.remove("show");learnBtn.classList.remove("holding");holding=false;
-    publish({cmd:"learn_start",door:activeDoor});
-  },3000);
+  if (learnState !== "idle") {
+    publish({ cmd: "learn_cancel", door: activeDoor });
+    return;
+  }
+  if (holding) return;
+  holding = true; holdLeft = 3;
+  learnBtn.classList.add("holding");
+  cdNum.textContent = "3"; cd.classList.add("show");
+  countTimer = setInterval(function () {
+    holdLeft--; if (holdLeft > 0) cdNum.textContent = holdLeft;
+  }, 1000);
+  holdTimer = setTimeout(function () {
+    clearInterval(countTimer); cd.classList.remove("show");
+    learnBtn.classList.remove("holding"); holding = false;
+    publish({ cmd: "learn_start", door: activeDoor });
+  }, 3000);
 }
-function cancelHold(e){e.preventDefault();if(!holding)return;holding=false;clearTimeout(holdTimer);clearInterval(countTimer);cd.classList.remove("show");learnBtn.classList.remove("holding");}
-learnBtn.addEventListener("mousedown",startHold);
-learnBtn.addEventListener("mouseup",cancelHold);
-learnBtn.addEventListener("mouseleave",cancelHold);
-learnBtn.addEventListener("touchstart",startHold,{passive:false});
-learnBtn.addEventListener("touchend",cancelHold);
+function cancelHold(e) {
+  e.preventDefault();
+  if (!holding) return;
+  holding = false;
+  clearTimeout(holdTimer); clearInterval(countTimer);
+  cd.classList.remove("show"); learnBtn.classList.remove("holding");
+}
+learnBtn.addEventListener("mousedown", startHold);
+learnBtn.addEventListener("mouseup", cancelHold);
+learnBtn.addEventListener("mouseleave", cancelHold);
+learnBtn.addEventListener("touchstart", startHold, { passive: false });
+learnBtn.addEventListener("touchend", cancelHold);
 
-updateDoorUI();setConnUI();connectMQTT(0);
+updateDoorUI();
+setConnUI();
+log("page loaded | broker=emqx | id=" + GARAGE_DEVICE_ID);
+connectMQTT();
 </script>
 </body>
 </html>
