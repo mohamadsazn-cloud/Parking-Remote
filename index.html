@@ -27,7 +27,7 @@ h1{text-align:center;font-size:1.25rem;font-weight:600;margin-bottom:6px}
 .btn-learn{width:180px;padding:10px;border:none;border-radius:10px;background:#2a2a2a;color:var(--muted);font-size:.8rem;cursor:pointer;user-select:none}
 .btn-learn.learning{background:var(--danger);color:#fff}
 .btn-learn.holding{background:var(--accent);color:#fff}
-.hint{text-align:center;font-size:.7rem;color:var(--muted);max-width:280px}
+.hint{text-align:center;font-size:.7rem;color:var(--muted)}
 .credit{text-align:center;margin-top:28px;font-size:.68rem;color:#555}
 #toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-120%);z-index:9999;padding:10px 18px;border-radius:10px;font-size:.85rem;font-weight:600;opacity:0;transition:.25s;background:#14532d;color:#bbf7d0}
 #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
@@ -47,9 +47,7 @@ h1{text-align:center;font-size:1.25rem;font-weight:600;margin-bottom:6px}
     &nbsp;·&nbsp;
     <span class="dot" id="dotDev"></span><span id="txtDev">Device —</span>
   </p>
-  <div class="toolbar">
-    <button class="refresh" type="button" onclick="pingDevice(true)">↻ Refresh</button>
-  </div>
+  <div class="toolbar"><button class="refresh" type="button" onclick="pingDevice(true)">↻ Refresh</button></div>
   <div class="tabs">
     <button class="tab active" type="button" id="tab0" onclick="selectDoor(0)">1</button>
     <button class="tab" type="button" id="tab1" onclick="selectDoor(1)">2</button>
@@ -68,20 +66,20 @@ h1{text-align:center;font-size:1.25rem;font-weight:600;margin-bottom:6px}
 </div>
 <script>
 const GARAGE_DEVICE_ID = "417ca1";
+/* همان ترتیب عمومی ESP — فقط WSS (برای GitHub) */
 const BROKER_URLS = [
+  "wss://test.mosquitto.org:8081/mqtt",
   "wss://broker.emqx.io:8084/mqtt",
-  "wss://test.mosquitto.org:8081/mqtt"
+  "wss://broker.hivemq.com:8884/mqtt"
 ];
-const MQTT_USER = "";
-const MQTT_PASS = "";
 const PING_TIMEOUT_MS = 5000;
 
 const topicCmd = "garage/" + GARAGE_DEVICE_ID + "/cmd";
 const topicStatus = "garage/" + GARAGE_DEVICE_ID + "/status";
 const topicState = "garage/" + GARAGE_DEVICE_ID + "/state";
 
-var client=null, mqttOk=false, deviceOk=false, pingTimer=null, toastTimer=null;
-var activeDoor=0, learnState="idle", learnTarget="";
+var client=null, mqttOk=false, deviceOk=false, pingTimer=null, toastTimer=null, brokerFailTimer=null;
+var activeDoor=0, learnState="idle", learnTarget="", brokerIndex=0;
 
 function showToast(t,err){var e=document.getElementById("toast");e.textContent=t;e.className="toast"+(err?" err":"");void e.offsetWidth;e.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(function(){e.classList.remove("show");},2000);}
 function setConnUI(){
@@ -107,20 +105,35 @@ function pingDevice(fromBtn){
   clearTimeout(pingTimer);
   pingTimer=setTimeout(function(){if(!deviceOk){setConnUI();if(fromBtn)showToast("Device offline",true);}},PING_TIMEOUT_MS);
 }
-function markOnline(){deviceOk=true;clearTimeout(pingTimer);setConnUI();}
+function markOnline(){deviceOk=true;clearTimeout(pingTimer);clearTimeout(brokerFailTimer);setConnUI();}
 
 function connectMQTT(i){
-  if(i>=BROKER_URLS.length){mqttOk=false;deviceOk=false;setConnUI();document.getElementById("txtMqtt").textContent="Connection failed";return;}
-  if(client)try{client.end(true);}catch(e){}
+  if(i>=BROKER_URLS.length){
+    mqttOk=false;deviceOk=false;setConnUI();
+    document.getElementById("txtMqtt").textContent="Connection failed";
+    return;
+  }
+  if(client) try{client.end(true);}catch(e){}
+  brokerIndex=i;
   var url=BROKER_URLS[i];
-  console.log("try",url);
-  var opts={clientId:"park_"+Math.random().toString(16).slice(2,10),clean:true,connectTimeout:10000,reconnectPeriod:0};
-  if(MQTT_USER){opts.username=MQTT_USER;opts.password=MQTT_PASS;}
-  client=mqtt.connect(url,opts);
+  console.log("MQTT try",i,url);
+  client=mqtt.connect(url,{
+    clientId:"park_"+Math.random().toString(16).slice(2,10),
+    clean:true,connectTimeout:10000,reconnectPeriod:0
+  });
   client.on("connect",function(){
     mqttOk=true;setConnUI();
     client.subscribe(topicStatus);client.subscribe(topicState);
     setTimeout(function(){pingDevice(false);},400);
+    clearTimeout(brokerFailTimer);
+    brokerFailTimer=setTimeout(function(){
+      if(!deviceOk && mqttOk){
+        console.log("No device on broker, next");
+        try{client.end(true);}catch(e){}
+        mqttOk=false;setConnUI();
+        connectMQTT(i+1);
+      }
+    },6000);
   });
   client.on("message",function(t,p){
     try{
@@ -136,7 +149,9 @@ function connectMQTT(i){
     }catch(e){}
   });
   client.on("close",function(){if(mqttOk){mqttOk=false;deviceOk=false;setConnUI();}});
-  setTimeout(function(){if(!mqttOk){try{client.end(true);}catch(e){}connectMQTT(i+1);}},11000);
+  setTimeout(function(){
+    if(!mqttOk){try{client.end(true);}catch(e){} connectMQTT(i+1);}
+  },11000);
 }
 
 function selectDoor(n){activeDoor=n;publish({cmd:"select_door",door:n});updateDoorUI();}
