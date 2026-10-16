@@ -67,16 +67,13 @@ h1{text-align:center;font-size:1.25rem;font-weight:600;margin-bottom:6px}
   <p class="credit">Designed &amp; built by M.S.A</p>
 </div>
 <script>
-/* ========== CONFIG — private server (same as ESP) ========== */
 const GARAGE_DEVICE_ID = "417ca1";
-const BROKER_URL = "ws://130.185.74.211:9001/mqtt";
-const MQTT_USER = "gateway";
-const MQTT_PASS = "Gw@2026#Mqtt!";
+const BROKER_URL = "wss://test.mosquitto.org:8081/mqtt";
 const PING_TIMEOUT_MS = 5000;
 
-const topicCmd    = "garage/" + GARAGE_DEVICE_ID + "/cmd";
+const topicCmd = "garage/" + GARAGE_DEVICE_ID + "/cmd";
 const topicStatus = "garage/" + GARAGE_DEVICE_ID + "/status";
-const topicState  = "garage/" + GARAGE_DEVICE_ID + "/state";
+const topicState = "garage/" + GARAGE_DEVICE_ID + "/state";
 
 var client = null, mqttOk = false, deviceOk = false;
 var pingTimer = null, toastTimer = null;
@@ -143,14 +140,11 @@ function markOnline() {
 }
 function connectMQTT() {
   if (client) try { client.end(true); } catch (e) {}
-  console.log("MQTT connect", BROKER_URL);
   client = mqtt.connect(BROKER_URL, {
     clientId: "park_" + Math.random().toString(16).slice(2, 10),
     clean: true,
-    connectTimeout: 10000,
-    reconnectPeriod: 5000,
-    username: MQTT_USER,
-    password: MQTT_PASS
+    connectTimeout: 12000,
+    reconnectPeriod: 5000
   });
   client.on("connect", function () {
     mqttOk = true;
@@ -171,9 +165,6 @@ function connectMQTT() {
         updateDoorUI();
       }
     } catch (e) {}
-  });
-  client.on("error", function (err) {
-    console.log("MQTT error", err);
   });
   client.on("close", function () {
     if (mqttOk) { mqttOk = false; deviceOk = false; setConnUI(); }
