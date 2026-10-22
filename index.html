@@ -3,168 +3,189 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Parking Doors</title>
+<title>MSA Gateway</title>
 <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
 <style>
-:root{--bg:#0f0f0f;--card:#1a1a1a;--border:#2a2a2a;--text:#e8e8e8;--muted:#888;--accent:#3b82f6;--success:#22c55e;--danger:#ef4444}
+:root{--bg:#0f0f0f;--card:#1a1a1a;--border:#2a2a2a;--text:#e8e8e8;--muted:#888;--accent:#3b82f6;--ok:#22c55e;--danger:#ef4444;--warn:#eab308}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:20px 16px 40px}
-.wrap{max-width:420px;margin:0 auto}
-h1{text-align:center;font-size:1.25rem;font-weight:600;margin-bottom:6px}
-.sub{text-align:center;font-size:.78rem;color:var(--muted);margin-bottom:18px}
-.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#555;margin-right:6px;vertical-align:middle}
-.dot.on{background:var(--success);box-shadow:0 0 8px var(--success)}
-.toolbar{display:flex;justify-content:center;gap:10px;margin-bottom:16px}
-.refresh,.logout{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:8px 16px;font-size:.8rem;cursor:pointer}
-.logout{color:var(--muted)}
-.tabs{display:flex;gap:8px;margin-bottom:28px}
-.tab{flex:1;padding:11px 8px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:.85rem;cursor:pointer}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:16px}
+.wrap{max-width:440px;margin:0 auto}
+h1{font-size:1.2rem;text-align:center;margin-bottom:4px}
+.sub{text-align:center;font-size:.75rem;color:var(--muted);margin-bottom:16px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#555;margin-right:5px;vertical-align:middle}
+.dot.on{background:var(--ok);box-shadow:0 0 6px var(--ok)}
+.dot.warn{background:var(--warn)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px}
+.card h2{font-size:.95rem;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.card .meta{font-size:.72rem;color:var(--muted);margin-bottom:10px}
+.card.disabled{opacity:.45;pointer-events:none}
+.btn-row{display:flex;gap:8px;justify-content:center;margin:8px 0}
+.btn{flex:1;max-width:96px;aspect-ratio:1;border:1px solid var(--border);border-radius:14px;background:#121212;color:var(--text);font-size:1.5rem;cursor:pointer}
+.btn:active{background:var(--accent);transform:scale(.95)}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tab{flex:1;padding:8px;border-radius:10px;border:1px solid var(--border);background:#121212;color:var(--muted);font-size:.8rem;cursor:pointer}
 .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
-.main{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:42vh;gap:18px}
-.controls{display:flex;gap:12px;width:100%;max-width:300px;justify-content:center}
-.btn{flex:1;aspect-ratio:1;max-width:96px;border:1px solid var(--border);border-radius:16px;background:var(--card);color:var(--text);font-size:1.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.btn:active,.btn.pressed{background:var(--accent);transform:scale(.94)}
-.btn.selected{background:var(--accent);color:#fff}
-.btn-learn{width:180px;padding:10px;border:none;border-radius:10px;background:#2a2a2a;color:var(--muted);font-size:.8rem;cursor:pointer;user-select:none}
-.btn-learn.learning{background:var(--danger);color:#fff}
-.btn-learn.holding{background:var(--accent);color:#fff}
-.hint{text-align:center;font-size:.7rem;color:var(--muted)}
-.credit{text-align:center;margin-top:28px;font-size:.68rem;color:#555}
-#toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-120%);z-index:9999;padding:10px 18px;border-radius:10px;font-size:.85rem;font-weight:600;opacity:0;transition:.25s;background:#14532d;color:#bbf7d0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.small-btn{padding:10px;border-radius:10px;border:1px solid var(--border);background:#121212;color:var(--text);font-size:.8rem;cursor:pointer}
+.small-btn:active{background:var(--accent)}
+.toolbar{display:flex;gap:8px;justify-content:center;margin-bottom:12px}
+.toolbar button{padding:8px 14px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:.78rem;cursor:pointer}
+#login{max-width:360px;margin:10vh auto 0;padding:22px 18px;background:var(--card);border:1px solid var(--border);border-radius:16px}
+#login h2{text-align:center;margin-bottom:6px;font-size:1.1rem}
+#login p.hint{text-align:center;font-size:.75rem;color:var(--muted);margin-bottom:16px}
+#login label{display:block;font-size:.72rem;color:var(--muted);margin-bottom:4px}
+#login input{width:100%;padding:11px 12px;margin-bottom:12px;border-radius:10px;border:1px solid var(--border);background:#121212;color:var(--text)}
+#login button{width:100%;padding:12px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
+#loginErr{text-align:center;color:var(--danger);font-size:.8rem;min-height:1.2em;margin-top:10px}
+#app{display:none}
+#toast{position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-120%);padding:10px 16px;border-radius:10px;background:#14532d;color:#bbf7d0;font-size:.85rem;font-weight:600;opacity:0;transition:.25s;z-index:99}
 #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 #toast.err{background:#450a0a;color:#fecaca}
-#countdown{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:200}
-#countdown.show{display:flex}
-#countdown .num{font-size:4rem;font-weight:700;color:var(--accent)}
-#app{display:none}
-#login{max-width:360px;margin:12vh auto 0;padding:24px 20px;background:var(--card);border:1px solid var(--border);border-radius:16px}
-#login h2{text-align:center;font-size:1.1rem;margin-bottom:6px}
-#login .hint-login{text-align:center;font-size:.75rem;color:var(--muted);margin-bottom:20px}
-#login label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:6px}
-#login input{width:100%;padding:12px 14px;margin-bottom:14px;border-radius:10px;border:1px solid var(--border);background:#121212;color:var(--text);font-size:1rem}
-#login input:focus{outline:none;border-color:var(--accent)}
-#login button{width:100%;padding:12px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:.95rem;font-weight:600;cursor:pointer}
-#login button:disabled{opacity:.6;cursor:wait}
-#loginErr{text-align:center;color:var(--danger);font-size:.8rem;min-height:1.2em;margin-top:12px}
+.credit{text-align:center;margin-top:18px;font-size:.68rem;color:#555}
+.status-line{font-size:.78rem;margin:4px 0;color:var(--muted)}
 </style>
 </head>
 <body>
 <div id="toast"></div>
-<div id="countdown"><div class="num" id="cdNum">3</div><div style="color:#888;margin-top:8px">Hold to Learn</div></div>
 
-<!-- Login (credentials NOT stored in source) -->
 <div id="login">
-  <h2>Parking Doors</h2>
-  <p class="hint-login">Sign in to continue</p>
-  <label for="user">Username</label>
-  <input id="user" type="text" autocomplete="username" autocapitalize="off" spellcheck="false">
-  <label for="pass">Password</label>
+  <h2>MSA Gateway</h2>
+  <p class="hint">Sign in to continue</p>
+  <label>Username</label>
+  <input id="user" type="text" autocomplete="username" autocapitalize="off">
+  <label>Password</label>
   <input id="pass" type="password" autocomplete="current-password">
   <button type="button" id="btnLogin" onclick="doLogin()">Sign in</button>
   <p id="loginErr"></p>
 </div>
 
 <div id="app" class="wrap">
-  <h1>Parking Doors</h1>
+  <h1>MSA Gateway</h1>
   <p class="sub">
-    <span class="dot" id="dotMqtt"></span><span id="txtMqtt">Connecting…</span>
-    &nbsp;·&nbsp;
-    <span class="dot" id="dotDev"></span><span id="txtDev">Device —</span>
+    <span class="dot" id="dotMqtt"></span><span id="txtMqtt">MQTT —</span>
   </p>
   <div class="toolbar">
-    <button class="refresh" type="button" onclick="pingDevice(true)">↻ Refresh</button>
-    <button class="logout" type="button" onclick="doLogout()">Log out</button>
+    <button type="button" onclick="pingAll()">↻ Refresh</button>
+    <button type="button" onclick="doLogout()">Log out</button>
   </div>
-  <div class="tabs">
-    <button class="tab active" type="button" id="tab0" onclick="selectDoor(0)">1</button>
-    <button class="tab" type="button" id="tab1" onclick="selectDoor(1)">2</button>
-    <button class="tab" type="button" id="tab2" onclick="selectDoor(2)">3</button>
+
+  <!-- Node status -->
+  <div class="card">
+    <h2>Nodes</h2>
+    <div class="status-line"><span class="dot" id="dotHub"></span>Hub (ESP32): <span id="txtHub">—</span></div>
+    <div class="status-line"><span class="dot" id="dotGarage"></span>Parking RF: <span id="txtGarage">—</span></div>
+    <div class="status-line"><span class="dot" id="dotAc"></span>AC IR: <span id="txtAc">—</span></div>
+    <div class="status-line"><span class="dot" id="dotLight"></span>Lighting: <span id="txtLight">Soon</span></div>
   </div>
-  <div class="main">
-    <div class="controls">
-      <button class="btn" type="button" id="btnUp" onclick="sendCmd('up')">▲</button>
-      <button class="btn" type="button" id="btnStop" onclick="sendCmd('stop')">⏹</button>
-      <button class="btn" type="button" id="btnDown" onclick="sendCmd('down')">▼</button>
+
+  <!-- Parking -->
+  <div class="card" id="cardParking">
+    <h2>Parking doors <span class="meta" id="parkPath"></span></h2>
+    <div class="tabs">
+      <button class="tab active" type="button" id="tab0" onclick="selectDoor(0)">1</button>
+      <button class="tab" type="button" id="tab1" onclick="selectDoor(1)">2</button>
+      <button class="tab" type="button" id="tab2" onclick="selectDoor(2)">3</button>
     </div>
-    <button class="btn-learn" type="button" id="btnLearn">Learn</button>
-    <p class="hint">Hold Learn 3s → choose ▲ ⏹ or ▼ → press remote</p>
+    <div class="btn-row">
+      <button class="btn" type="button" onclick="sendGarage('up')">▲</button>
+      <button class="btn" type="button" onclick="sendGarage('stop')">⏹</button>
+      <button class="btn" type="button" onclick="sendGarage('down')">▼</button>
+    </div>
+    <p class="meta" style="text-align:center">Commands go Hub → ESP-NOW → RF node</p>
   </div>
+
+  <!-- AC -->
+  <div class="card" id="cardAc">
+    <h2>Air conditioning</h2>
+    <p class="meta">Via Hub → AC node (when node is online)</p>
+    <div class="grid2">
+      <button class="small-btn" type="button" onclick="sendAc('on')">Power ON</button>
+      <button class="small-btn" type="button" onclick="sendAc('off')">Power OFF</button>
+      <button class="small-btn" type="button" onclick="sendAc('temp_up')">Temp +</button>
+      <button class="small-btn" type="button" onclick="sendAc('temp_down')">Temp −</button>
+    </div>
+  </div>
+
+  <!-- Lighting placeholder -->
+  <div class="card disabled">
+    <h2>Lighting</h2>
+    <p class="meta">Module not ready yet</p>
+  </div>
+
   <p class="credit">Designed &amp; built by M.S.A</p>
 </div>
 
 <script>
-/* No MQTT password in source — user enters at login */
-const GARAGE_DEVICE_ID = "417ca1";
 const BROKER_URL = "wss://130.185.74.211:8084/mqtt";
-const PING_TIMEOUT_MS = 5000;
+const T_CMD    = "garage/hub/cmd";
+const T_STATUS = "garage/hub/status";
+const T_STATE  = "garage/hub/state";
+const T_LEGACY_CMD = "garage/417ca1/cmd";
+const T_LEGACY_STATUS = "garage/417ca1/status";
+const T_LEGACY_STATE = "garage/417ca1/state";
 
-const topicCmd    = "garage/" + GARAGE_DEVICE_ID + "/cmd";
-const topicStatus = "garage/" + GARAGE_DEVICE_ID + "/status";
-const topicState  = "garage/" + GARAGE_DEVICE_ID + "/state";
+var client = null, mqttOk = false, mqttUser = "", mqttPass = "";
+var activeDoor = 0;
+var hubOk = false, garageOk = false, acOk = false;
+var hubTimer = null, garageTimer = null, toastTimer = null;
 
-var client = null, mqttOk = false, deviceOk = false;
-var mqttUser = "", mqttPass = "";
-var pingTimer = null, toastTimer = null;
-var activeDoor = 0, learnState = "idle", learnTarget = "";
-
-function showToast(t, err) {
+function toast(t, err) {
   var e = document.getElementById("toast");
   e.textContent = t;
-  e.className = "toast" + (err ? " err" : "");
+  e.className = err ? "err" : "";
   void e.offsetWidth;
   e.classList.add("show");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(function () { e.classList.remove("show"); }, 2000);
 }
-function setConnUI() {
-  document.getElementById("dotMqtt").className = "dot" + (mqttOk ? " on" : "");
+function setDot(id, on) {
+  document.getElementById(id).className = "dot" + (on ? " on" : "");
+}
+function uiConn() {
+  setDot("dotMqtt", mqttOk);
   document.getElementById("txtMqtt").textContent = mqttOk ? "Connected" : "Disconnected";
-  document.getElementById("dotDev").className = "dot" + (deviceOk ? " on" : "");
-  document.getElementById("txtDev").textContent = deviceOk ? "Online" : "Offline";
+  setDot("dotHub", hubOk);
+  document.getElementById("txtHub").textContent = hubOk ? "Online" : "Offline";
+  setDot("dotGarage", garageOk);
+  document.getElementById("txtGarage").textContent = garageOk ? "Online" : "Offline";
+  setDot("dotAc", acOk);
+  document.getElementById("txtAc").textContent = acOk ? "Online" : "Offline";
 }
-function updateDoorUI() {
+function selectDoor(n) {
+  activeDoor = n;
   for (var i = 0; i < 3; i++)
-    document.getElementById("tab" + i).className = "tab" + (i === activeDoor ? " active" : "");
-  document.getElementById("btnLearn").className =
-    "btn-learn" + (learnState !== "idle" ? " learning" : "");
-  ["up", "stop", "down"].forEach(function (t) {
-    var id = t === "up" ? "btnUp" : t === "down" ? "btnDown" : "btnStop";
-    document.getElementById(id).className =
-      "btn" + (learnState !== "idle" && learnTarget === t ? " selected" : "");
-  });
+    document.getElementById("tab" + i).className = "tab" + (i === n ? " active" : "");
+  publish({ cmd: "select_door", door: n, node: "garage" });
 }
-function pressAnim(id) {
-  var el = document.getElementById(id);
-  if (!el) return;
-  el.classList.add("pressed");
-  setTimeout(function () { el.classList.remove("pressed"); }, 180);
+function publish(obj) {
+  if (!client || !mqttOk) { toast("Not connected", true); return; }
+  var s = JSON.stringify(obj);
+  client.publish(T_CMD, s);
 }
-function publish(o) {
-  if (!client || !mqttOk) { showToast("Not connected", true); return; }
-  client.publish(topicCmd, JSON.stringify(o));
+function sendGarage(cmd) {
+  publish({ cmd: cmd, door: activeDoor, node: "garage" });
+  toast(cmd.toUpperCase() + " D" + (activeDoor + 1));
 }
-function pingDevice(fromBtn) {
-  if (!mqttOk) {
-    deviceOk = false; setConnUI();
-    if (fromBtn) showToast("MQTT offline", true);
-    return;
-  }
-  deviceOk = false;
-  document.getElementById("txtDev").textContent = "Checking…";
-  document.getElementById("dotDev").className = "dot";
+function sendAc(cmd) {
+  publish({ cmd: "ac_" + cmd, node: "ac" });
+  toast("AC " + cmd);
+}
+function markHub() {
+  hubOk = true;
+  clearTimeout(hubTimer);
+  hubTimer = setTimeout(function () { hubOk = false; uiConn(); }, 20000);
+  uiConn();
+}
+function markGarage() {
+  garageOk = true;
+  clearTimeout(garageTimer);
+  garageTimer = setTimeout(function () { garageOk = false; uiConn(); }, 20000);
+  uiConn();
+}
+function pingAll() {
   publish({ cmd: "ping" });
-  clearTimeout(pingTimer);
-  pingTimer = setTimeout(function () {
-    if (!deviceOk) {
-      setConnUI();
-      if (fromBtn) showToast("Device offline", true);
-    }
-  }, PING_TIMEOUT_MS);
-}
-function markOnline() {
-  deviceOk = true;
-  clearTimeout(pingTimer);
-  setConnUI();
+  publish({ cmd: "ping", node: "garage" });
+  toast("Ping…");
 }
 
 function showApp() {
@@ -181,7 +202,7 @@ function showLogin(msg) {
 function connectMQTT() {
   if (client) try { client.end(true); } catch (e) {}
   client = mqtt.connect(BROKER_URL, {
-    clientId: "park_" + Math.random().toString(16).slice(2, 10),
+    clientId: "web_" + Math.random().toString(16).slice(2, 10),
     clean: true,
     connectTimeout: 12000,
     reconnectPeriod: 4000,
@@ -191,145 +212,72 @@ function connectMQTT() {
   });
   client.on("connect", function () {
     mqttOk = true;
-    setConnUI();
+    uiConn();
     showApp();
-    document.getElementById("loginErr").textContent = "";
-    document.getElementById("btnLogin").disabled = false;
-    client.subscribe(topicStatus);
-    client.subscribe(topicState);
-    setTimeout(function () { pingDevice(false); }, 400);
+    client.subscribe(T_STATUS);
+    client.subscribe(T_STATE);
+    client.subscribe(T_LEGACY_STATUS);
+    client.subscribe(T_LEGACY_STATE);
+    setTimeout(pingAll, 400);
   });
   client.on("message", function (t, p) {
     try {
       var d = JSON.parse(p.toString());
-      if (d.type === "ack" || d.type === "state") markOnline();
-      if (d.type === "ack" && d.msg && d.msg !== "pong") showToast(d.msg);
-      if (d.type === "state") {
-        if (typeof d.door === "number") activeDoor = d.door;
-        if (d.learn) learnState = d.learn;
-        if (d.target !== undefined) learnTarget = d.target || "";
-        updateDoorUI();
+      if (d.type === "ack" || d.type === "state") {
+        markHub();
+        if (d.msg && d.msg !== "HUB OK" && d.msg !== "pong") toast(d.msg);
+        if (d.path) document.getElementById("parkPath").textContent = d.path;
+        if (d.node_garage || d.msg === "OPEN" || d.msg === "CLOSE" || d.msg === "STOP") markGarage();
+        if (d.node_ac) acOk = true;
       }
-    } catch (e) {}
-  });
-  client.on("error", function (err) {
-    console.log("MQTT error", err);
+    } catch (e) {
+      markHub();
+    }
   });
   client.on("close", function () {
-    if (mqttOk) {
-      mqttOk = false;
-      deviceOk = false;
-      setConnUI();
-    }
+    mqttOk = false; hubOk = false; garageOk = false; uiConn();
   });
 }
 
 function doLogin() {
   var u = (document.getElementById("user").value || "").trim();
   var p = document.getElementById("pass").value || "";
-  var err = document.getElementById("loginErr");
   if (!u || !p) {
-    err.textContent = "Enter username and password";
+    document.getElementById("loginErr").textContent = "Enter username and password";
     return;
   }
-  err.textContent = "Connecting…";
+  document.getElementById("loginErr").textContent = "Connecting…";
   document.getElementById("btnLogin").disabled = true;
-  mqttUser = u;
-  mqttPass = p;
-  /* optional: remember only for this browser tab session (not in GitHub source) */
+  mqttUser = u; mqttPass = p;
   try {
     sessionStorage.setItem("pk_u", u);
     sessionStorage.setItem("pk_p", p);
   } catch (e) {}
   connectMQTT();
-  /* if auth fails, broker drops connection — show error after timeout */
   setTimeout(function () {
     if (!mqttOk) {
-      showLogin("Login failed — check user/pass or network");
+      showLogin("Login failed — user/pass or network");
       try { sessionStorage.removeItem("pk_u"); sessionStorage.removeItem("pk_p"); } catch (e) {}
     }
   }, 14000);
 }
-
 function doLogout() {
-  mqttOk = false;
-  deviceOk = false;
-  mqttUser = "";
-  mqttPass = "";
-  try {
-    sessionStorage.removeItem("pk_u");
-    sessionStorage.removeItem("pk_p");
-  } catch (e) {}
+  mqttOk = false; hubOk = false; garageOk = false;
+  mqttUser = ""; mqttPass = "";
+  try { sessionStorage.removeItem("pk_u"); sessionStorage.removeItem("pk_p"); } catch (e) {}
   if (client) try { client.end(true); } catch (e) {}
   client = null;
   document.getElementById("pass").value = "";
   showLogin("");
-  setConnUI();
+  uiConn();
 }
-
-function selectDoor(n) {
-  activeDoor = n;
-  publish({ cmd: "select_door", door: n });
-  updateDoorUI();
-}
-function sendCmd(c) {
-  pressAnim(c === "up" ? "btnUp" : c === "down" ? "btnDown" : "btnStop");
-  if (learnState === "wait_button")
-    publish({ cmd: "learn_select", door: activeDoor, target: c });
-  else
-    publish({ cmd: c, door: activeDoor });
-}
-
-var holdTimer = null, countTimer = null, holding = false, holdLeft = 3;
-var learnBtn = document.getElementById("btnLearn");
-var cd = document.getElementById("countdown");
-var cdNum = document.getElementById("cdNum");
-function startHold(e) {
-  e.preventDefault();
-  if (learnState !== "idle") {
-    publish({ cmd: "learn_cancel", door: activeDoor });
-    return;
-  }
-  if (holding) return;
-  holding = true; holdLeft = 3;
-  learnBtn.classList.add("holding");
-  cdNum.textContent = "3"; cd.classList.add("show");
-  countTimer = setInterval(function () {
-    holdLeft--; if (holdLeft > 0) cdNum.textContent = holdLeft;
-  }, 1000);
-  holdTimer = setTimeout(function () {
-    clearInterval(countTimer); cd.classList.remove("show");
-    learnBtn.classList.remove("holding"); holding = false;
-    publish({ cmd: "learn_start", door: activeDoor });
-  }, 3000);
-}
-function cancelHold(e) {
-  e.preventDefault();
-  if (!holding) return;
-  holding = false;
-  clearTimeout(holdTimer); clearInterval(countTimer);
-  cd.classList.remove("show"); learnBtn.classList.remove("holding");
-}
-learnBtn.addEventListener("mousedown", startHold);
-learnBtn.addEventListener("mouseup", cancelHold);
-learnBtn.addEventListener("mouseleave", cancelHold);
-learnBtn.addEventListener("touchstart", startHold, { passive: false });
-learnBtn.addEventListener("touchend", cancelHold);
 
 document.getElementById("pass").addEventListener("keydown", function (e) {
   if (e.key === "Enter") doLogin();
 });
-document.getElementById("user").addEventListener("keydown", function (e) {
-  if (e.key === "Enter") document.getElementById("pass").focus();
-});
-
-updateDoorUI();
-setConnUI();
-
-/* Auto-fill only from this tab session after a successful earlier login — still not in GitHub file */
+uiConn();
 try {
-  var su = sessionStorage.getItem("pk_u");
-  var sp = sessionStorage.getItem("pk_p");
+  var su = sessionStorage.getItem("pk_u"), sp = sessionStorage.getItem("pk_p");
   if (su && sp) {
     document.getElementById("user").value = su;
     document.getElementById("pass").value = sp;
