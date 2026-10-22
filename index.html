@@ -14,8 +14,9 @@ h1{text-align:center;font-size:1.25rem;font-weight:600;margin-bottom:6px}
 .sub{text-align:center;font-size:.78rem;color:var(--muted);margin-bottom:18px}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#555;margin-right:6px;vertical-align:middle}
 .dot.on{background:var(--success);box-shadow:0 0 8px var(--success)}
-.toolbar{display:flex;justify-content:center;margin-bottom:16px}
-.refresh{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:8px 16px;font-size:.8rem;cursor:pointer}
+.toolbar{display:flex;justify-content:center;gap:10px;margin-bottom:16px}
+.refresh,.logout{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:8px 16px;font-size:.8rem;cursor:pointer}
+.logout{color:var(--muted)}
 .tabs{display:flex;gap:8px;margin-bottom:28px}
 .tab{flex:1;padding:11px 8px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:.85rem;cursor:pointer}
 .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -35,12 +36,35 @@ h1{text-align:center;font-size:1.25rem;font-weight:600;margin-bottom:6px}
 #countdown{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:200}
 #countdown.show{display:flex}
 #countdown .num{font-size:4rem;font-weight:700;color:var(--accent)}
+#app{display:none}
+#login{max-width:360px;margin:12vh auto 0;padding:24px 20px;background:var(--card);border:1px solid var(--border);border-radius:16px}
+#login h2{text-align:center;font-size:1.1rem;margin-bottom:6px}
+#login .hint-login{text-align:center;font-size:.75rem;color:var(--muted);margin-bottom:20px}
+#login label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:6px}
+#login input{width:100%;padding:12px 14px;margin-bottom:14px;border-radius:10px;border:1px solid var(--border);background:#121212;color:var(--text);font-size:1rem}
+#login input:focus{outline:none;border-color:var(--accent)}
+#login button{width:100%;padding:12px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:.95rem;font-weight:600;cursor:pointer}
+#login button:disabled{opacity:.6;cursor:wait}
+#loginErr{text-align:center;color:var(--danger);font-size:.8rem;min-height:1.2em;margin-top:12px}
 </style>
 </head>
 <body>
 <div id="toast"></div>
 <div id="countdown"><div class="num" id="cdNum">3</div><div style="color:#888;margin-top:8px">Hold to Learn</div></div>
-<div class="wrap">
+
+<!-- Login (credentials NOT stored in source) -->
+<div id="login">
+  <h2>Parking Doors</h2>
+  <p class="hint-login">Sign in to continue</p>
+  <label for="user">Username</label>
+  <input id="user" type="text" autocomplete="username" autocapitalize="off" spellcheck="false">
+  <label for="pass">Password</label>
+  <input id="pass" type="password" autocomplete="current-password">
+  <button type="button" id="btnLogin" onclick="doLogin()">Sign in</button>
+  <p id="loginErr"></p>
+</div>
+
+<div id="app" class="wrap">
   <h1>Parking Doors</h1>
   <p class="sub">
     <span class="dot" id="dotMqtt"></span><span id="txtMqtt">Connecting…</span>
@@ -49,6 +73,7 @@ h1{text-align:center;font-size:1.25rem;font-weight:600;margin-bottom:6px}
   </p>
   <div class="toolbar">
     <button class="refresh" type="button" onclick="pingDevice(true)">↻ Refresh</button>
+    <button class="logout" type="button" onclick="doLogout()">Log out</button>
   </div>
   <div class="tabs">
     <button class="tab active" type="button" id="tab0" onclick="selectDoor(0)">1</button>
@@ -66,12 +91,11 @@ h1{text-align:center;font-size:1.25rem;font-weight:600;margin-bottom:6px}
   </div>
   <p class="credit">Designed &amp; built by M.S.A</p>
 </div>
+
 <script>
-/* Private server — WSS (self-signed may need browser trust first) */
+/* No MQTT password in source — user enters at login */
 const GARAGE_DEVICE_ID = "417ca1";
 const BROKER_URL = "wss://130.185.74.211:8084/mqtt";
-const MQTT_USER = "gateway";
-const MQTT_PASS = "Gw@2026#Mqtt!";
 const PING_TIMEOUT_MS = 5000;
 
 const topicCmd    = "garage/" + GARAGE_DEVICE_ID + "/cmd";
@@ -79,6 +103,7 @@ const topicStatus = "garage/" + GARAGE_DEVICE_ID + "/status";
 const topicState  = "garage/" + GARAGE_DEVICE_ID + "/state";
 
 var client = null, mqttOk = false, deviceOk = false;
+var mqttUser = "", mqttPass = "";
 var pingTimer = null, toastTimer = null;
 var activeDoor = 0, learnState = "idle", learnTarget = "";
 
@@ -141,20 +166,35 @@ function markOnline() {
   clearTimeout(pingTimer);
   setConnUI();
 }
+
+function showApp() {
+  document.getElementById("login").style.display = "none";
+  document.getElementById("app").style.display = "block";
+}
+function showLogin(msg) {
+  document.getElementById("app").style.display = "none";
+  document.getElementById("login").style.display = "block";
+  document.getElementById("loginErr").textContent = msg || "";
+  document.getElementById("btnLogin").disabled = false;
+}
+
 function connectMQTT() {
   if (client) try { client.end(true); } catch (e) {}
   client = mqtt.connect(BROKER_URL, {
     clientId: "park_" + Math.random().toString(16).slice(2, 10),
     clean: true,
     connectTimeout: 12000,
-    reconnectPeriod: 5000,
-    username: MQTT_USER,
-    password: MQTT_PASS,
+    reconnectPeriod: 4000,
+    username: mqttUser,
+    password: mqttPass,
     rejectUnauthorized: false
   });
   client.on("connect", function () {
     mqttOk = true;
     setConnUI();
+    showApp();
+    document.getElementById("loginErr").textContent = "";
+    document.getElementById("btnLogin").disabled = false;
     client.subscribe(topicStatus);
     client.subscribe(topicState);
     setTimeout(function () { pingDevice(false); }, 400);
@@ -172,11 +212,61 @@ function connectMQTT() {
       }
     } catch (e) {}
   });
-  client.on("error", function (err) { console.log("MQTT error", err); });
+  client.on("error", function (err) {
+    console.log("MQTT error", err);
+  });
   client.on("close", function () {
-    if (mqttOk) { mqttOk = false; deviceOk = false; setConnUI(); }
+    if (mqttOk) {
+      mqttOk = false;
+      deviceOk = false;
+      setConnUI();
+    }
   });
 }
+
+function doLogin() {
+  var u = (document.getElementById("user").value || "").trim();
+  var p = document.getElementById("pass").value || "";
+  var err = document.getElementById("loginErr");
+  if (!u || !p) {
+    err.textContent = "Enter username and password";
+    return;
+  }
+  err.textContent = "Connecting…";
+  document.getElementById("btnLogin").disabled = true;
+  mqttUser = u;
+  mqttPass = p;
+  /* optional: remember only for this browser tab session (not in GitHub source) */
+  try {
+    sessionStorage.setItem("pk_u", u);
+    sessionStorage.setItem("pk_p", p);
+  } catch (e) {}
+  connectMQTT();
+  /* if auth fails, broker drops connection — show error after timeout */
+  setTimeout(function () {
+    if (!mqttOk) {
+      showLogin("Login failed — check user/pass or network");
+      try { sessionStorage.removeItem("pk_u"); sessionStorage.removeItem("pk_p"); } catch (e) {}
+    }
+  }, 14000);
+}
+
+function doLogout() {
+  mqttOk = false;
+  deviceOk = false;
+  mqttUser = "";
+  mqttPass = "";
+  try {
+    sessionStorage.removeItem("pk_u");
+    sessionStorage.removeItem("pk_p");
+  } catch (e) {}
+  if (client) try { client.end(true); } catch (e) {}
+  client = null;
+  document.getElementById("pass").value = "";
+  showLogin("");
+  setConnUI();
+}
+
 function selectDoor(n) {
   activeDoor = n;
   publish({ cmd: "select_door", door: n });
@@ -226,9 +316,26 @@ learnBtn.addEventListener("mouseleave", cancelHold);
 learnBtn.addEventListener("touchstart", startHold, { passive: false });
 learnBtn.addEventListener("touchend", cancelHold);
 
+document.getElementById("pass").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") doLogin();
+});
+document.getElementById("user").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") document.getElementById("pass").focus();
+});
+
 updateDoorUI();
 setConnUI();
-connectMQTT();
+
+/* Auto-fill only from this tab session after a successful earlier login — still not in GitHub file */
+try {
+  var su = sessionStorage.getItem("pk_u");
+  var sp = sessionStorage.getItem("pk_p");
+  if (su && sp) {
+    document.getElementById("user").value = su;
+    document.getElementById("pass").value = sp;
+    doLogin();
+  }
+} catch (e) {}
 </script>
 </body>
 </html>
