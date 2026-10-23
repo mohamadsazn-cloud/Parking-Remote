@@ -3,287 +3,679 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>MSA Gateway</title>
-<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<title>Parking Control</title>
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
-:root{--bg:#0f0f0f;--card:#1a1a1a;--border:#2a2a2a;--text:#e8e8e8;--muted:#888;--accent:#3b82f6;--ok:#22c55e;--danger:#ef4444;--warn:#eab308}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:16px}
-.wrap{max-width:440px;margin:0 auto}
-h1{font-size:1.2rem;text-align:center;margin-bottom:4px}
-.sub{text-align:center;font-size:.75rem;color:var(--muted);margin-bottom:16px}
-.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#555;margin-right:5px;vertical-align:middle}
-.dot.on{background:var(--ok);box-shadow:0 0 6px var(--ok)}
-.dot.warn{background:var(--warn)}
-.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px}
-.card h2{font-size:.95rem;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
-.card .meta{font-size:.72rem;color:var(--muted);margin-bottom:10px}
-.card.disabled{opacity:.45;pointer-events:none}
-.btn-row{display:flex;gap:8px;justify-content:center;margin:8px 0}
-.btn{flex:1;max-width:96px;aspect-ratio:1;border:1px solid var(--border);border-radius:14px;background:#121212;color:var(--text);font-size:1.5rem;cursor:pointer}
-.btn:active{background:var(--accent);transform:scale(.95)}
-.tabs{display:flex;gap:6px;margin-bottom:10px}
-.tab{flex:1;padding:8px;border-radius:10px;border:1px solid var(--border);background:#121212;color:var(--muted);font-size:.8rem;cursor:pointer}
-.tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.small-btn{padding:10px;border-radius:10px;border:1px solid var(--border);background:#121212;color:var(--text);font-size:.8rem;cursor:pointer}
-.small-btn:active{background:var(--accent)}
-.toolbar{display:flex;gap:8px;justify-content:center;margin-bottom:12px}
-.toolbar button{padding:8px 14px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:.78rem;cursor:pointer}
-#login{max-width:360px;margin:10vh auto 0;padding:22px 18px;background:var(--card);border:1px solid var(--border);border-radius:16px}
-#login h2{text-align:center;margin-bottom:6px;font-size:1.1rem}
-#login p.hint{text-align:center;font-size:.75rem;color:var(--muted);margin-bottom:16px}
-#login label{display:block;font-size:.72rem;color:var(--muted);margin-bottom:4px}
-#login input{width:100%;padding:11px 12px;margin-bottom:12px;border-radius:10px;border:1px solid var(--border);background:#121212;color:var(--text)}
-#login button{width:100%;padding:12px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
-#loginErr{text-align:center;color:var(--danger);font-size:.8rem;min-height:1.2em;margin-top:10px}
-#app{display:none}
-#toast{position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-120%);padding:10px 16px;border-radius:10px;background:#14532d;color:#bbf7d0;font-size:.85rem;font-weight:600;opacity:0;transition:.25s;z-index:99}
-#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-#toast.err{background:#450a0a;color:#fecaca}
-.credit{text-align:center;margin-top:18px;font-size:.68rem;color:#555}
-.status-line{font-size:.78rem;margin:4px 0;color:var(--muted)}
+:root {
+  --bg: #0f0f0f;
+  --card: #1a1a1a;
+  --border: #2a2a2a;
+  --text: #e8e8e8;
+  --muted: #888;
+  --accent: #3b82f6;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --warn: #eab308;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px 16px 40px;
+}
+.wrap { max-width: 440px; margin: 0 auto; }
+h1 { text-align: center; font-size: 1.3rem; font-weight: 600; margin-bottom: 6px; }
+.sub { text-align: center; font-size: 0.78rem; color: var(--muted); margin-bottom: 20px; }
+
+/* views */
+.view { display: none; }
+.view.active { display: block; }
+
+/* login */
+.login-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 22px;
+  margin-top: 40px;
+}
+.login-box label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 6px; }
+.login-box input {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #121212;
+  color: var(--text);
+  font-size: 1rem;
+}
+.btn-primary {
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-primary:disabled { opacity: 0.5; }
+.err { color: var(--danger); font-size: 0.8rem; text-align: center; margin-top: 12px; min-height: 1.2em; }
+
+/* connection strip */
+.strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+.dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #555; display: inline-block;
+}
+.dot.on { background: var(--success); box-shadow: 0 0 8px var(--success); }
+.dot.off { background: var(--danger); }
+.dot.warn { background: var(--warn); }
+
+/* hub card */
+.hub-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.hub-icon {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  background: #1e293b;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+.hub-meta { flex: 1; min-width: 0; }
+.hub-meta .title { font-weight: 600; font-size: 0.95rem; }
+.hub-meta .st { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
+.badge {
+  font-size: 0.68rem;
+  padding: 4px 8px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+.badge.on { background: #14532d; color: #bbf7d0; }
+.badge.off { background: #450a0a; color: #fecaca; }
+
+/* node grid */
+.section-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+}
+.nodes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.node-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 12px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.node-card:active { transform: scale(0.97); }
+.node-card:hover { border-color: var(--accent); }
+.node-card.offline { opacity: 0.45; }
+.node-emoji {
+  width: 56px; height: 56px;
+  margin: 0 auto 10px;
+  border-radius: 16px;
+  background: #172554;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.7rem;
+}
+.node-name { font-weight: 600; font-size: 0.9rem; }
+.node-id { font-size: 0.68rem; color: var(--muted); margin-top: 3px; }
+.node-st {
+  margin-top: 8px;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+.node-st.online { color: var(--success); }
+.node-st.offline { color: var(--danger); }
+
+.empty {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: 24px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+}
+
+/* node page header */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.back {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 1.2rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.topbar h2 { font-size: 1.1rem; font-weight: 600; flex: 1; }
+.topbar .mini { font-size: 0.72rem; color: var(--muted); }
+
+/* control UI (same as before) */
+.tabs { display: flex; gap: 8px; margin-bottom: 28px; }
+.tab {
+  flex: 1; padding: 11px 8px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--muted); font-size: 0.85rem; cursor: pointer;
+}
+.tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.main {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 18px; min-height: 42vh; justify-content: center;
+}
+.controls { display: flex; gap: 12px; width: 100%; max-width: 300px; justify-content: center; }
+.btn {
+  flex: 1; aspect-ratio: 1; max-width: 96px;
+  border: 1px solid var(--border); border-radius: 16px;
+  background: var(--card); color: var(--text); font-size: 1.7rem; cursor: pointer;
+}
+.btn:active { background: var(--accent); transform: scale(0.94); }
+.btn.selected { background: var(--accent); color: #fff; }
+.btn-learn {
+  width: 180px; padding: 10px; border: none; border-radius: 10px;
+  background: #2a2a2a; color: var(--muted); font-size: 0.8rem;
+  cursor: pointer; user-select: none;
+}
+.btn-learn.learning { background: var(--danger); color: #fff; }
+.btn-learn.holding { background: var(--accent); color: #fff; }
+.hint { text-align: center; font-size: 0.7rem; color: var(--muted); }
+.credit { text-align: center; margin-top: 28px; font-size: 0.68rem; color: #555; }
+
+#toast {
+  position: fixed; top: 16px; left: 50%;
+  transform: translateX(-50%) translateY(-120%);
+  z-index: 9999; padding: 10px 18px; border-radius: 10px;
+  font-size: 0.85rem; font-weight: 600; opacity: 0; transition: 0.25s;
+  background: #14532d; color: #bbf7d0; pointer-events: none;
+}
+#toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+#toast.err { background: #450a0a; color: #fecaca; }
+#countdown {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+  display: none; align-items: center; justify-content: center;
+  flex-direction: column; z-index: 200;
+}
+#countdown.show { display: flex; }
+#countdown .num { font-size: 4rem; font-weight: 700; color: var(--accent); }
+
+.logout {
+  display: block; width: 100%; margin-top: 24px; padding: 10px;
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 10px; color: var(--muted); font-size: 0.8rem; cursor: pointer;
+}
 </style>
 </head>
 <body>
 <div id="toast"></div>
-
-<div id="login">
-  <h2>MSA Gateway</h2>
-  <p class="hint">Sign in to continue</p>
-  <label>Username</label>
-  <input id="user" type="text" autocomplete="username" autocapitalize="off">
-  <label>Password</label>
-  <input id="pass" type="password" autocomplete="current-password">
-  <button type="button" id="btnLogin" onclick="doLogin()">Sign in</button>
-  <p id="loginErr"></p>
+<div id="countdown">
+  <div class="num" id="cdNum">3</div>
+  <div style="color:#888;margin-top:8px">Hold to Learn</div>
 </div>
 
-<div id="app" class="wrap">
-  <h1>MSA Gateway</h1>
-  <p class="sub">
-    <span class="dot" id="dotMqtt"></span><span id="txtMqtt">MQTT —</span>
-  </p>
-  <div class="toolbar">
-    <button type="button" onclick="pingAll()">↻ Refresh</button>
-    <button type="button" onclick="doLogout()">Log out</button>
+<!-- LOGIN -->
+<div id="view-login" class="view active">
+  <div class="wrap">
+    <h1>Parking Control</h1>
+    <p class="sub">Sign in to your system</p>
+    <div class="login-box">
+      <label>Username</label>
+      <input id="user" type="text" autocomplete="username" value="gateway">
+      <label>Password</label>
+      <input id="pass" type="password" autocomplete="current-password">
+      <button class="btn-primary" id="btnLogin" onclick="doLogin()">Connect</button>
+      <p class="err" id="loginErr"></p>
+    </div>
+    <p class="credit">Designed &amp; built by M.S.A</p>
   </div>
+</div>
 
-  <!-- Node status -->
-  <div class="card">
-    <h2>Nodes</h2>
-    <div class="status-line"><span class="dot" id="dotHub"></span>Hub (ESP32): <span id="txtHub">—</span></div>
-    <div class="status-line"><span class="dot" id="dotGarage"></span>Parking RF: <span id="txtGarage">—</span></div>
-    <div class="status-line"><span class="dot" id="dotAc"></span>AC IR: <span id="txtAc">—</span></div>
-    <div class="status-line"><span class="dot" id="dotLight"></span>Lighting: <span id="txtLight">Soon</span></div>
+<!-- DASHBOARD -->
+<div id="view-dash" class="view">
+  <div class="wrap">
+    <h1>System</h1>
+    <div class="strip">
+      <span class="dot" id="mqttDot"></span>
+      <span id="mqttTxt">MQTT…</span>
+    </div>
+
+    <div class="hub-card">
+      <div class="hub-icon">🛰️</div>
+      <div class="hub-meta">
+        <div class="title">Core (ESP32 Hub)</div>
+        <div class="st" id="hubDetail">Checking…</div>
+      </div>
+      <span class="badge off" id="hubBadge">Offline</span>
+    </div>
+
+    <p class="section-label">Nodes</p>
+    <div class="nodes" id="nodeGrid"></div>
+    <p class="empty" id="nodeEmpty" style="display:none">No nodes online yet.<br>Power a node or wait for MQTT state.</p>
+
+    <button class="logout" onclick="doLogout()">Disconnect</button>
+    <p class="credit">Designed &amp; built by M.S.A</p>
   </div>
+</div>
 
-  <!-- Parking -->
-  <div class="card" id="cardParking">
-    <h2>Parking doors <span class="meta" id="parkPath"></span></h2>
+<!-- NODE CONTROL -->
+<div id="view-node" class="view">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="back" type="button" onclick="showDash()">←</button>
+      <div>
+        <h2 id="nodeTitle">Node</h2>
+        <div class="mini"><span class="dot" id="nodeDot"></span> <span id="nodeSub">—</span></div>
+      </div>
+    </div>
+
     <div class="tabs">
       <button class="tab active" type="button" id="tab0" onclick="selectDoor(0)">1</button>
       <button class="tab" type="button" id="tab1" onclick="selectDoor(1)">2</button>
       <button class="tab" type="button" id="tab2" onclick="selectDoor(2)">3</button>
     </div>
-    <div class="btn-row">
-      <button class="btn" type="button" onclick="sendGarage('up')">▲</button>
-      <button class="btn" type="button" onclick="sendGarage('stop')">⏹</button>
-      <button class="btn" type="button" onclick="sendGarage('down')">▼</button>
+
+    <div class="main">
+      <div class="controls">
+        <button class="btn" type="button" id="btnUp" onclick="sendCmd('up')">▲</button>
+        <button class="btn" type="button" id="btnStop" onclick="sendCmd('stop')">⏹</button>
+        <button class="btn" type="button" id="btnDown" onclick="sendCmd('down')">▼</button>
+      </div>
+      <button class="btn-learn" type="button" id="btnLearn">Learn</button>
+      <p class="hint">Hold Learn 3s → choose ▲ ⏹ or ▼ → press remote</p>
     </div>
-    <p class="meta" style="text-align:center">Commands go Hub → ESP-NOW → RF node</p>
+    <p class="credit">Designed &amp; built by M.S.A</p>
   </div>
-
-  <!-- AC -->
-  <div class="card" id="cardAc">
-    <h2>Air conditioning</h2>
-    <p class="meta">Via Hub → AC node (when node is online)</p>
-    <div class="grid2">
-      <button class="small-btn" type="button" onclick="sendAc('on')">Power ON</button>
-      <button class="small-btn" type="button" onclick="sendAc('off')">Power OFF</button>
-      <button class="small-btn" type="button" onclick="sendAc('temp_up')">Temp +</button>
-      <button class="small-btn" type="button" onclick="sendAc('temp_down')">Temp −</button>
-    </div>
-  </div>
-
-  <!-- Lighting placeholder -->
-  <div class="card disabled">
-    <h2>Lighting</h2>
-    <p class="meta">Module not ready yet</p>
-  </div>
-
-  <p class="credit">Designed &amp; built by M.S.A</p>
 </div>
 
 <script>
-const BROKER_URL = "wss://130.185.74.211:8084/mqtt";
-const T_CMD    = "garage/hub/cmd";
-const T_STATUS = "garage/hub/status";
-const T_STATE  = "garage/hub/state";
-const T_LEGACY_CMD = "garage/417ca1/cmd";
-const T_LEGACY_STATUS = "garage/417ca1/status";
-const T_LEGACY_STATE = "garage/417ca1/state";
+const BROKER = 'wss://130.185.74.211:8084/mqtt';
+const AUTH_USER = 'gateway';
+const AUTH_PASS = 'Gw@2026#Mqtt!';
 
-var client = null, mqttOk = false, mqttUser = "", mqttPass = "";
-var activeDoor = 0;
-var hubOk = false, garageOk = false, acOk = false;
-var hubTimer = null, garageTimer = null, toastTimer = null;
+/* Known nodes (extend as you add hardware) */
+const KNOWN_NODES = [
+  { id: '417ca1', name: 'Garage RF', emoji: '🚗', kind: 'garage' }
+];
 
-function toast(t, err) {
-  var e = document.getElementById("toast");
-  e.textContent = t;
-  e.className = err ? "err" : "";
-  void e.offsetWidth;
-  e.classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(function () { e.classList.remove("show"); }, 2000);
-}
-function setDot(id, on) {
-  document.getElementById(id).className = "dot" + (on ? " on" : "");
-}
-function uiConn() {
-  setDot("dotMqtt", mqttOk);
-  document.getElementById("txtMqtt").textContent = mqttOk ? "Connected" : "Disconnected";
-  setDot("dotHub", hubOk);
-  document.getElementById("txtHub").textContent = hubOk ? "Online" : "Offline";
-  setDot("dotGarage", garageOk);
-  document.getElementById("txtGarage").textContent = garageOk ? "Online" : "Offline";
-  setDot("dotAc", acOk);
-  document.getElementById("txtAc").textContent = acOk ? "Online" : "Offline";
-}
-function selectDoor(n) {
-  activeDoor = n;
-  for (var i = 0; i < 3; i++)
-    document.getElementById("tab" + i).className = "tab" + (i === n ? " active" : "");
-  publish({ cmd: "select_door", door: n, node: "garage" });
-}
-function publish(obj) {
-  if (!client || !mqttOk) { toast("Not connected", true); return; }
-  var s = JSON.stringify(obj);
-  client.publish(T_CMD, s);
-}
-function sendGarage(cmd) {
-  publish({ cmd: cmd, door: activeDoor, node: "garage" });
-  toast(cmd.toUpperCase() + " D" + (activeDoor + 1));
-}
-function sendAc(cmd) {
-  publish({ cmd: "ac_" + cmd, node: "ac" });
-  toast("AC " + cmd);
-}
-function markHub() {
-  hubOk = true;
-  clearTimeout(hubTimer);
-  hubTimer = setTimeout(function () { hubOk = false; uiConn(); }, 20000);
-  uiConn();
-}
-function markGarage() {
-  garageOk = true;
-  clearTimeout(garageTimer);
-  garageTimer = setTimeout(function () { garageOk = false; uiConn(); }, 20000);
-  uiConn();
-}
-function pingAll() {
-  publish({ cmd: "ping" });
-  publish({ cmd: "ping", node: "garage" });
-  toast("Ping…");
+let client = null;
+let mqttOk = false;
+let hubOnline = false;
+let hubLast = 0;
+const nodes = {}; // id -> { online, last, learn, door, mode }
+let currentNodeId = null;
+let activeDoor = 0;
+let learnState = 'idle';
+let learnTarget = '';
+
+KNOWN_NODES.forEach(n => {
+  nodes[n.id] = { online: false, last: 0, learn: 'idle', door: 0, mode: '—' };
+});
+
+function toast(msg, err) {
+  const e = document.getElementById('toast');
+  e.textContent = msg;
+  e.className = (err ? 'err ' : '') + 'show';
+  setTimeout(() => e.classList.remove('show'), 2200);
 }
 
-function showApp() {
-  document.getElementById("login").style.display = "none";
-  document.getElementById("app").style.display = "block";
-}
-function showLogin(msg) {
-  document.getElementById("app").style.display = "none";
-  document.getElementById("login").style.display = "block";
-  document.getElementById("loginErr").textContent = msg || "";
-  document.getElementById("btnLogin").disabled = false;
+function show(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
 }
 
-function connectMQTT() {
-  if (client) try { client.end(true); } catch (e) {}
-  client = mqtt.connect(BROKER_URL, {
-    clientId: "web_" + Math.random().toString(16).slice(2, 10),
-    clean: true,
-    connectTimeout: 12000,
-    reconnectPeriod: 4000,
-    username: mqttUser,
-    password: mqttPass,
-    rejectUnauthorized: false
+function showDash() {
+  currentNodeId = null;
+  renderDash();
+  show('view-dash');
+}
+
+function openNode(id) {
+  currentNodeId = id;
+  const meta = KNOWN_NODES.find(n => n.id === id) || { name: id, emoji: '📡' };
+  document.getElementById('nodeTitle').textContent = meta.emoji + ' ' + meta.name;
+  activeDoor = (nodes[id] && nodes[id].door) || 0;
+  learnState = (nodes[id] && nodes[id].learn) || 'idle';
+  learnTarget = '';
+  updateNodeUI();
+  show('view-node');
+}
+
+/* ---------- MQTT ---------- */
+function setMqttUi(ok, text) {
+  mqttOk = ok;
+  const d = document.getElementById('mqttDot');
+  d.className = 'dot ' + (ok ? 'on' : 'off');
+  document.getElementById('mqttTxt').textContent = text;
+}
+
+function setHubUi(on) {
+  hubOnline = on;
+  document.getElementById('hubBadge').className = 'badge ' + (on ? 'on' : 'off');
+  document.getElementById('hubBadge').textContent = on ? 'Online' : 'Offline';
+  document.getElementById('hubDetail').textContent = on
+    ? 'Linked · routing & SMS ready'
+    : 'Not reachable · nodes may still work solo';
+}
+
+function renderDash() {
+  const grid = document.getElementById('nodeGrid');
+  const empty = document.getElementById('nodeEmpty');
+  grid.innerHTML = '';
+  let any = false;
+
+  KNOWN_NODES.forEach(meta => {
+    const st = nodes[meta.id] || { online: false };
+    any = true;
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'node-card' + (st.online ? '' : ' offline');
+    card.onclick = () => openNode(meta.id);
+    card.innerHTML =
+      '<div class="node-emoji">' + meta.emoji + '</div>' +
+      '<div class="node-name">' + meta.name + '</div>' +
+      '<div class="node-id">' + meta.id + (st.mode && st.mode !== '—' ? ' · ' + st.mode : '') + '</div>' +
+      '<div class="node-st ' + (st.online ? 'online' : 'offline') + '">' +
+        (st.online ? 'Online' : 'Offline') +
+      '</div>';
+    grid.appendChild(card);
   });
-  client.on("connect", function () {
-    mqttOk = true;
-    uiConn();
-    showApp();
-    client.subscribe(T_STATUS);
-    client.subscribe(T_STATE);
-    client.subscribe(T_LEGACY_STATUS);
-    client.subscribe(T_LEGACY_STATE);
-    setTimeout(pingAll, 400);
-  });
-  client.on("message", function (t, p) {
-    try {
-      var d = JSON.parse(p.toString());
-      if (d.type === "ack" || d.type === "state") {
-        markHub();
-        if (d.msg && d.msg !== "HUB OK" && d.msg !== "pong") toast(d.msg);
-        if (d.path) document.getElementById("parkPath").textContent = d.path;
-        if (d.node_garage || d.msg === "OPEN" || d.msg === "CLOSE" || d.msg === "STOP") markGarage();
-        if (d.node_ac) acOk = true;
-      }
-    } catch (e) {
-      markHub();
+
+  empty.style.display = any ? 'none' : 'block';
+  setHubUi(hubOnline);
+}
+
+function topicCmd(id)    { return 'garage/' + id + '/cmd'; }
+function topicStatus(id) { return 'garage/' + id + '/status'; }
+function topicState(id)  { return 'garage/' + id + '/state'; }
+
+function connectMqtt(user, pass) {
+  return new Promise((resolve, reject) => {
+    if (client) {
+      try { client.end(true); } catch (e) {}
+      client = null;
     }
-  });
-  client.on("close", function () {
-    mqttOk = false; hubOk = false; garageOk = false; uiConn();
+    const c = mqtt.connect(BROKER, {
+      username: user,
+      password: pass,
+      clientId: 'web-' + Math.random().toString(16).slice(2, 10),
+      reconnectPeriod: 4000,
+      connectTimeout: 12000,
+      clean: true
+    });
+    client = c;
+    const t = setTimeout(() => {
+      reject(new Error('Timeout'));
+      try { c.end(true); } catch (e) {}
+    }, 14000);
+
+    c.on('connect', () => {
+      clearTimeout(t);
+      setMqttUi(true, 'Connected');
+      c.subscribe('garage/hub/status');
+      c.subscribe('garage/hub/state');
+      c.subscribe('garage/+/status');
+      c.subscribe('garage/+/state');
+      /* ask hub / nodes for state */
+      c.publish('garage/hub/cmd', JSON.stringify({ cmd: 'ping' }));
+      KNOWN_NODES.forEach(n => {
+        c.publish(topicCmd(n.id), JSON.stringify({ cmd: 'ping' }));
+      });
+      resolve();
+    });
+    c.on('error', err => {
+      clearTimeout(t);
+      setMqttUi(false, 'Error');
+      reject(err);
+    });
+    c.on('close', () => setMqttUi(false, 'Disconnected'));
+    c.on('offline', () => setMqttUi(false, 'Offline'));
+    c.on('reconnect', () => setMqttUi(false, 'Reconnecting…'));
+    c.on('message', onMessage);
   });
 }
 
-function doLogin() {
-  var u = (document.getElementById("user").value || "").trim();
-  var p = document.getElementById("pass").value || "";
-  if (!u || !p) {
-    document.getElementById("loginErr").textContent = "Enter username and password";
+function onMessage(topic, payload) {
+  let data;
+  try { data = JSON.parse(payload.toString()); } catch (e) { return; }
+
+  const parts = topic.split('/');
+  if (parts.length < 3 || parts[0] !== 'garage') return;
+  const who = parts[1];
+  const kind = parts[2];
+
+  if (who === 'hub') {
+    hubOnline = true;
+    hubLast = Date.now();
+    setHubUi(true);
     return;
   }
-  document.getElementById("loginErr").textContent = "Connecting…";
-  document.getElementById("btnLogin").disabled = true;
-  mqttUser = u; mqttPass = p;
-  try {
-    sessionStorage.setItem("pk_u", u);
-    sessionStorage.setItem("pk_p", p);
-  } catch (e) {}
-  connectMQTT();
-  setTimeout(function () {
-    if (!mqttOk) {
-      showLogin("Login failed — user/pass or network");
-      try { sessionStorage.removeItem("pk_u"); sessionStorage.removeItem("pk_p"); } catch (e) {}
+
+  /* node topics */
+  if (!nodes[who]) {
+    nodes[who] = { online: false, last: 0, learn: 'idle', door: 0, mode: 'solo' };
+    if (!KNOWN_NODES.find(n => n.id === who)) {
+      KNOWN_NODES.push({ id: who, name: 'Node ' + who, emoji: '📡', kind: 'generic' });
     }
-  }, 14000);
-}
-function doLogout() {
-  mqttOk = false; hubOk = false; garageOk = false;
-  mqttUser = ""; mqttPass = "";
-  try { sessionStorage.removeItem("pk_u"); sessionStorage.removeItem("pk_p"); } catch (e) {}
-  if (client) try { client.end(true); } catch (e) {}
-  client = null;
-  document.getElementById("pass").value = "";
-  showLogin("");
-  uiConn();
+  }
+
+  nodes[who].online = true;
+  nodes[who].last = Date.now();
+  if (data.door !== undefined) nodes[who].door = data.door;
+  if (data.learn) nodes[who].learn = data.learn;
+  if (data.mode) nodes[who].mode = data.mode;
+  if (data.target !== undefined && currentNodeId === who) learnTarget = data.target || '';
+
+  if (currentNodeId === who) {
+    if (data.learn) learnState = data.learn;
+    if (data.door !== undefined) activeDoor = data.door;
+    updateNodeUI();
+    if (kind === 'status' && data.msg) toast(data.msg);
+  }
+
+  if (document.getElementById('view-dash').classList.contains('active')) renderDash();
+  else updateNodeOnlineBadge();
 }
 
-document.getElementById("pass").addEventListener("keydown", function (e) {
-  if (e.key === "Enter") doLogin();
-});
-uiConn();
-try {
-  var su = sessionStorage.getItem("pk_u"), sp = sessionStorage.getItem("pk_p");
-  if (su && sp) {
-    document.getElementById("user").value = su;
-    document.getElementById("pass").value = sp;
-    doLogin();
+/* mark offline if no traffic */
+setInterval(() => {
+  const now = Date.now();
+  if (hubOnline && now - hubLast > 90000) {
+    hubOnline = false;
+    setHubUi(false);
   }
-} catch (e) {}
+  let changed = false;
+  Object.keys(nodes).forEach(id => {
+    if (nodes[id].online && now - nodes[id].last > 90000) {
+      nodes[id].online = false;
+      changed = true;
+    }
+  });
+  if (changed && document.getElementById('view-dash').classList.contains('active')) renderDash();
+  if (currentNodeId) updateNodeOnlineBadge();
+}, 10000);
+
+function updateNodeOnlineBadge() {
+  if (!currentNodeId) return;
+  const st = nodes[currentNodeId];
+  const on = st && st.online;
+  document.getElementById('nodeDot').className = 'dot ' + (on ? 'on' : 'off');
+  document.getElementById('nodeSub').textContent =
+    (on ? 'Online' : 'Offline') + ' · ' + currentNodeId +
+    (st && st.mode ? ' · ' + st.mode : '');
+}
+
+/* ---------- node controls ---------- */
+function updateNodeUI() {
+  for (let i = 0; i < 3; i++) {
+    document.getElementById('tab' + i).className = 'tab' + (i === activeDoor ? ' active' : '');
+  }
+  document.getElementById('btnLearn').className =
+    'btn-learn' + (learnState !== 'idle' ? ' learning' : '');
+  ['up', 'stop', 'down'].forEach(t => {
+    const id = t === 'up' ? 'btnUp' : t === 'down' ? 'btnDown' : 'btnStop';
+    document.getElementById(id).className =
+      'btn' + (learnState !== 'idle' && learnTarget === t ? ' selected' : '');
+  });
+  updateNodeOnlineBadge();
+}
+
+function pubCmd(obj) {
+  if (!client || !mqttOk || !currentNodeId) {
+    toast('Not connected', true);
+    return;
+  }
+  client.publish(topicCmd(currentNodeId), JSON.stringify(obj));
+}
+
+function selectDoor(n) {
+  activeDoor = n;
+  pubCmd({ cmd: 'select_door', door: n });
+  updateNodeUI();
+}
+
+function sendCmd(c) {
+  if (learnState === 'wait_button') {
+    learnTarget = c;
+    learnState = 'wait_rf';
+    updateNodeUI();
+    pubCmd({ cmd: 'learn_select', door: activeDoor, target: c });
+    toast('Press remote');
+    return;
+  }
+  pubCmd({ cmd: c, door: activeDoor });
+}
+
+/* Learn hold 3s */
+(function setupLearn() {
+  const btn = document.getElementById('btnLearn');
+  const cd = document.getElementById('countdown');
+  const cdNum = document.getElementById('cdNum');
+  let holdTimer = null, countTimer = null, holding = false, left = 3;
+
+  function startHold(e) {
+    e.preventDefault();
+    if (learnState !== 'idle') {
+      pubCmd({ cmd: 'learn_cancel', door: activeDoor });
+      learnState = 'idle';
+      learnTarget = '';
+      updateNodeUI();
+      toast('Learn cancelled');
+      return;
+    }
+    if (holding) return;
+    holding = true;
+    left = 3;
+    btn.classList.add('holding');
+    cdNum.textContent = '3';
+    cd.classList.add('show');
+    countTimer = setInterval(() => {
+      left--;
+      if (left > 0) cdNum.textContent = left;
+    }, 1000);
+    holdTimer = setTimeout(() => {
+      clearInterval(countTimer);
+      cd.classList.remove('show');
+      btn.classList.remove('holding');
+      holding = false;
+      learnState = 'wait_button';
+      updateNodeUI();
+      pubCmd({ cmd: 'learn_start', door: activeDoor });
+      toast('Choose ▲ ⏹ or ▼');
+    }, 3000);
+  }
+  function cancelHold(e) {
+    e.preventDefault();
+    if (!holding) return;
+    holding = false;
+    clearTimeout(holdTimer);
+    clearInterval(countTimer);
+    cd.classList.remove('show');
+    btn.classList.remove('holding');
+  }
+  btn.addEventListener('mousedown', startHold);
+  btn.addEventListener('mouseup', cancelHold);
+  btn.addEventListener('mouseleave', cancelHold);
+  btn.addEventListener('touchstart', startHold, { passive: false });
+  btn.addEventListener('touchend', cancelHold);
+})();
+
+/* ---------- auth ---------- */
+async function doLogin() {
+  const user = document.getElementById('user').value.trim();
+  const pass = document.getElementById('pass').value;
+  const err = document.getElementById('loginErr');
+  const btn = document.getElementById('btnLogin');
+  err.textContent = '';
+  if (user !== AUTH_USER || pass !== AUTH_PASS) {
+    err.textContent = 'Invalid username or password';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Connecting…';
+  try {
+    await connectMqtt(user, pass);
+    sessionStorage.setItem('pc_ok', '1');
+    showDash();
+    toast('Connected');
+  } catch (e) {
+    err.textContent = 'MQTT failed — check network / broker';
+    setMqttUi(false, 'Failed');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Connect';
+}
+
+function doLogout() {
+  sessionStorage.removeItem('pc_ok');
+  if (client) try { client.end(true); } catch (e) {}
+  client = null;
+  mqttOk = false;
+  hubOnline = false;
+  Object.keys(nodes).forEach(id => { nodes[id].online = false; });
+  show('view-login');
+}
+
+/* auto resume */
+if (sessionStorage.getItem('pc_ok') === '1') {
+  document.getElementById('pass').value = AUTH_PASS;
+  doLogin();
+}
 </script>
 </body>
 </html>
