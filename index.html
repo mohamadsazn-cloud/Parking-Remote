@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Parking Control</title>
+<title>M.S.A GATEWAY</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 :root {
@@ -26,20 +26,23 @@ body {
   padding: 20px 16px 40px;
 }
 .wrap { max-width: 440px; margin: 0 auto; }
-h1 { text-align: center; font-size: 1.3rem; font-weight: 600; margin-bottom: 6px; }
-.sub { text-align: center; font-size: 0.78rem; color: var(--muted); margin-bottom: 20px; }
-
-/* views */
+h1 { text-align: center; font-size: 1.25rem; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.04em; }
+.clock {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 14px;
+  font-variant-numeric: tabular-nums;
+}
 .view { display: none; }
 .view.active { display: block; }
 
-/* login */
 .login-box {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 28px 22px;
-  margin-top: 40px;
+  margin-top: 32px;
 }
 .login-box label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 6px; }
 .login-box input {
@@ -66,7 +69,6 @@ h1 { text-align: center; font-size: 1.3rem; font-weight: 600; margin-bottom: 6px
 .btn-primary:disabled { opacity: 0.5; }
 .err { color: var(--danger); font-size: 0.8rem; text-align: center; margin-top: 12px; min-height: 1.2em; }
 
-/* connection strip */
 .strip {
   display: flex;
   align-items: center;
@@ -74,17 +76,15 @@ h1 { text-align: center; font-size: 1.3rem; font-weight: 600; margin-bottom: 6px
   gap: 8px;
   font-size: 0.78rem;
   color: var(--muted);
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 .dot {
   width: 8px; height: 8px; border-radius: 50%;
-  background: #555; display: inline-block;
+  background: #555; display: inline-block; vertical-align: middle;
 }
 .dot.on { background: var(--success); box-shadow: 0 0 8px var(--success); }
 .dot.off { background: var(--danger); }
-.dot.warn { background: var(--warn); }
 
-/* hub card */
 .hub-card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -111,11 +111,11 @@ h1 { text-align: center; font-size: 1.3rem; font-weight: 600; margin-bottom: 6px
   padding: 4px 8px;
   border-radius: 20px;
   font-weight: 600;
+  white-space: nowrap;
 }
 .badge.on { background: #14532d; color: #bbf7d0; }
 .badge.off { background: #450a0a; color: #fecaca; }
 
-/* node grid */
 .section-label {
   font-size: 0.72rem;
   color: var(--muted);
@@ -132,7 +132,7 @@ h1 { text-align: center; font-size: 1.3rem; font-weight: 600; margin-bottom: 6px
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 20px 12px 16px;
+  padding: 18px 12px 14px;
   text-align: center;
   cursor: pointer;
   transition: border-color 0.15s, transform 0.1s;
@@ -140,7 +140,7 @@ h1 { text-align: center; font-size: 1.3rem; font-weight: 600; margin-bottom: 6px
 }
 .node-card:active { transform: scale(0.97); }
 .node-card:hover { border-color: var(--accent); }
-.node-card.offline { opacity: 0.45; }
+.node-card.offline { opacity: 0.42; }
 .node-emoji {
   width: 56px; height: 56px;
   margin: 0 auto 10px;
@@ -149,26 +149,13 @@ h1 { text-align: center; font-size: 1.3rem; font-weight: 600; margin-bottom: 6px
   display: flex; align-items: center; justify-content: center;
   font-size: 1.7rem;
 }
-.node-name { font-weight: 600; font-size: 0.9rem; }
-.node-id { font-size: 0.68rem; color: var(--muted); margin-top: 3px; }
-.node-st {
-  margin-top: 8px;
-  font-size: 0.68rem;
-  font-weight: 600;
-}
+.node-name { font-weight: 600; font-size: 0.88rem; }
+.node-id { font-size: 0.65rem; color: var(--muted); margin-top: 3px; }
+.node-st { margin-top: 8px; font-size: 0.68rem; font-weight: 600; }
 .node-st.online { color: var(--success); }
 .node-st.offline { color: var(--danger); }
+.node-link { font-size: 0.62rem; color: var(--muted); margin-top: 4px; }
 
-.empty {
-  text-align: center;
-  color: var(--muted);
-  font-size: 0.85rem;
-  padding: 24px 12px;
-  border: 1px dashed var(--border);
-  border-radius: 12px;
-}
-
-/* node page header */
 .topbar {
   display: flex;
   align-items: center;
@@ -185,10 +172,9 @@ h1 { text-align: center; font-size: 1.3rem; font-weight: 600; margin-bottom: 6px
   cursor: pointer;
   flex-shrink: 0;
 }
-.topbar h2 { font-size: 1.1rem; font-weight: 600; flex: 1; }
-.topbar .mini { font-size: 0.72rem; color: var(--muted); }
+.topbar h2 { font-size: 1.05rem; font-weight: 600; }
+.topbar .mini { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
 
-/* control UI (same as before) */
 .tabs { display: flex; gap: 8px; margin-bottom: 28px; }
 .tab {
   flex: 1; padding: 11px 8px;
@@ -217,6 +203,15 @@ h1 { text-align: center; font-size: 1.3rem; font-weight: 600; margin-bottom: 6px
 .btn-learn.holding { background: var(--accent); color: #fff; }
 .hint { text-align: center; font-size: 0.7rem; color: var(--muted); }
 .credit { text-align: center; margin-top: 28px; font-size: 0.68rem; color: #555; }
+.logout {
+  display: block; width: 100%; margin-top: 24px; padding: 10px;
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 10px; color: var(--muted); font-size: 0.8rem; cursor: pointer;
+}
+.soon {
+  text-align: center; color: var(--muted); font-size: 0.9rem;
+  padding: 48px 16px; border: 1px dashed var(--border); border-radius: 14px;
+}
 
 #toast {
   position: fixed; top: 16px; left: 50%;
@@ -234,12 +229,6 @@ h1 { text-align: center; font-size: 1.3rem; font-weight: 600; margin-bottom: 6px
 }
 #countdown.show { display: flex; }
 #countdown .num { font-size: 4rem; font-weight: 700; color: var(--accent); }
-
-.logout {
-  display: block; width: 100%; margin-top: 24px; padding: 10px;
-  background: transparent; border: 1px solid var(--border);
-  border-radius: 10px; color: var(--muted); font-size: 0.8rem; cursor: pointer;
-}
 </style>
 </head>
 <body>
@@ -252,8 +241,8 @@ h1 { text-align: center; font-size: 1.3rem; font-weight: 600; margin-bottom: 6px
 <!-- LOGIN -->
 <div id="view-login" class="view active">
   <div class="wrap">
-    <h1>Parking Control</h1>
-    <p class="sub">Sign in to your system</p>
+    <h1>M.S.A GATEWAY</h1>
+    <p class="clock" id="clockLogin">—</p>
     <div class="login-box">
       <label>Username</label>
       <input id="user" type="text" autocomplete="username" value="gateway">
@@ -269,7 +258,8 @@ h1 { text-align: center; font-size: 1.3rem; font-weight: 600; margin-bottom: 6px
 <!-- DASHBOARD -->
 <div id="view-dash" class="view">
   <div class="wrap">
-    <h1>System</h1>
+    <h1>M.S.A GATEWAY</h1>
+    <p class="clock" id="clockDash">—</p>
     <div class="strip">
       <span class="dot" id="mqttDot"></span>
       <span id="mqttTxt">MQTT…</span>
@@ -279,21 +269,20 @@ h1 { text-align: center; font-size: 1.3rem; font-weight: 600; margin-bottom: 6px
       <div class="hub-icon">🛰️</div>
       <div class="hub-meta">
         <div class="title">Core (ESP32 Hub)</div>
-        <div class="st" id="hubDetail">Checking…</div>
+        <div class="st" id="hubDetail">Waiting for hub state…</div>
       </div>
       <span class="badge off" id="hubBadge">Offline</span>
     </div>
 
     <p class="section-label">Nodes</p>
     <div class="nodes" id="nodeGrid"></div>
-    <p class="empty" id="nodeEmpty" style="display:none">No nodes online yet.<br>Power a node or wait for MQTT state.</p>
 
     <button class="logout" onclick="doLogout()">Disconnect</button>
     <p class="credit">Designed &amp; built by M.S.A</p>
   </div>
 </div>
 
-<!-- NODE CONTROL -->
+<!-- GARAGE NODE -->
 <div id="view-node" class="view">
   <div class="wrap">
     <div class="topbar">
@@ -303,13 +292,11 @@ h1 { text-align: center; font-size: 1.3rem; font-weight: 600; margin-bottom: 6px
         <div class="mini"><span class="dot" id="nodeDot"></span> <span id="nodeSub">—</span></div>
       </div>
     </div>
-
     <div class="tabs">
       <button class="tab active" type="button" id="tab0" onclick="selectDoor(0)">1</button>
       <button class="tab" type="button" id="tab1" onclick="selectDoor(1)">2</button>
       <button class="tab" type="button" id="tab2" onclick="selectDoor(2)">3</button>
     </div>
-
     <div class="main">
       <div class="controls">
         <button class="btn" type="button" id="btnUp" onclick="sendCmd('up')">▲</button>
@@ -323,29 +310,54 @@ h1 { text-align: center; font-size: 1.3rem; font-weight: 600; margin-bottom: 6px
   </div>
 </div>
 
+<!-- PLACEHOLDER for AC / Light -->
+<div id="view-soon" class="view">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="back" type="button" onclick="showDash()">←</button>
+      <div>
+        <h2 id="soonTitle">Coming soon</h2>
+        <div class="mini" id="soonSub">—</div>
+      </div>
+    </div>
+    <div class="soon" id="soonBody">This node UI will be configured next.</div>
+    <p class="credit">Designed &amp; built by M.S.A</p>
+  </div>
+</div>
+
 <script>
 const BROKER = 'wss://130.185.74.211:8084/mqtt';
 const AUTH_USER = 'gateway';
 const AUTH_PASS = 'Gw@2026#Mqtt!';
 
-/* Known nodes (extend as you add hardware) */
+/** Hub is online only if state/status received within this window (ms) */
+const HUB_TTL = 75000;
+const NODE_TTL = 90000;
+
 const KNOWN_NODES = [
-  { id: '417ca1', name: 'Garage RF', emoji: '🚗', kind: 'garage' }
+  { id: '417ca1', name: 'Garage RF',    emoji: '🚗', kind: 'garage' },
+  { id: 'ac01',   name: 'AC Remote',    emoji: '❄️', kind: 'ac' },
+  { id: 'light01',name: 'Light Control',emoji: '💡', kind: 'light' }
 ];
 
 let client = null;
 let mqttOk = false;
-let hubOnline = false;
-let hubLast = 0;
-const nodes = {}; // id -> { online, last, learn, door, mode }
+
+let hub = {
+  online: false,
+  last: 0,
+  link: ''   // 'wifi' | 'gprs' | ''
+};
+
+const nodes = {};
+KNOWN_NODES.forEach(n => {
+  nodes[n.id] = { online: false, last: 0, learn: 'idle', door: 0, mode: '', link: '' };
+});
+
 let currentNodeId = null;
 let activeDoor = 0;
 let learnState = 'idle';
 let learnTarget = '';
-
-KNOWN_NODES.forEach(n => {
-  nodes[n.id] = { online: false, last: 0, learn: 'idle', door: 0, mode: '—' };
-});
 
 function toast(msg, err) {
   const e = document.getElementById('toast');
@@ -359,6 +371,77 @@ function show(id) {
   document.getElementById(id).classList.add('active');
 }
 
+function linkLabel(link, mode) {
+  if (link === 'wifi') return 'Wi‑Fi';
+  if (link === 'gprs') return 'GPRS';
+  if (mode === 'solo') return 'Wi‑Fi (solo)';
+  if (mode === 'hub') return 'via Hub';
+  return '';
+}
+
+/* ---- Iran clock (English) ---- */
+function tickClock() {
+  const fmt = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Tehran',
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  const s = fmt.format(new Date()) + '  (Iran)';
+  const a = document.getElementById('clockLogin');
+  const b = document.getElementById('clockDash');
+  if (a) a.textContent = s;
+  if (b) b.textContent = s;
+}
+setInterval(tickClock, 1000);
+tickClock();
+
+/* ---- Hub UI: only Online if recent real traffic ---- */
+function refreshHubTruth() {
+  const alive = hub.last > 0 && (Date.now() - hub.last) < HUB_TTL;
+  hub.online = alive;
+  document.getElementById('hubBadge').className = 'badge ' + (alive ? 'on' : 'off');
+  document.getElementById('hubBadge').textContent = alive ? 'Online' : 'Offline';
+  let detail = 'No recent state from ESP32';
+  if (alive) {
+    const lk = linkLabel(hub.link, '');
+    detail = lk ? ('Connected · ' + lk) : 'Connected · link unknown';
+  } else {
+    detail = 'Offline · nodes may still work solo';
+  }
+  document.getElementById('hubDetail').textContent = detail;
+}
+
+function renderDash() {
+  refreshHubTruth();
+  const grid = document.getElementById('nodeGrid');
+  grid.innerHTML = '';
+  const now = Date.now();
+
+  KNOWN_NODES.forEach(meta => {
+    const st = nodes[meta.id];
+    const on = st.last > 0 && (now - st.last) < NODE_TTL;
+    st.online = on;
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'node-card' + (on ? '' : ' offline');
+    card.onclick = () => openNode(meta.id);
+    const lk = linkLabel(st.link, st.mode);
+    card.innerHTML =
+      '<div class="node-emoji">' + meta.emoji + '</div>' +
+      '<div class="node-name">' + meta.name + '</div>' +
+      '<div class="node-id">' + meta.id + '</div>' +
+      '<div class="node-st ' + (on ? 'online' : 'offline') + '">' + (on ? 'Online' : 'Offline') + '</div>' +
+      (on && lk ? '<div class="node-link">' + lk + '</div>' : '');
+    grid.appendChild(card);
+  });
+}
+
 function showDash() {
   currentNodeId = null;
   renderDash();
@@ -366,8 +449,19 @@ function showDash() {
 }
 
 function openNode(id) {
+  const meta = KNOWN_NODES.find(n => n.id === id);
+  if (!meta) return;
+
+  if (meta.kind !== 'garage') {
+    document.getElementById('soonTitle').textContent = meta.emoji + ' ' + meta.name;
+    document.getElementById('soonSub').textContent = id;
+    document.getElementById('soonBody').textContent =
+      meta.name + ' UI will be set up in the next step.';
+    show('view-soon');
+    return;
+  }
+
   currentNodeId = id;
-  const meta = KNOWN_NODES.find(n => n.id === id) || { name: id, emoji: '📡' };
   document.getElementById('nodeTitle').textContent = meta.emoji + ' ' + meta.name;
   activeDoor = (nodes[id] && nodes[id].door) || 0;
   learnState = (nodes[id] && nodes[id].learn) || 'idle';
@@ -376,60 +470,16 @@ function openNode(id) {
   show('view-node');
 }
 
-/* ---------- MQTT ---------- */
+/* ---- MQTT ---- */
 function setMqttUi(ok, text) {
   mqttOk = ok;
-  const d = document.getElementById('mqttDot');
-  d.className = 'dot ' + (ok ? 'on' : 'off');
+  document.getElementById('mqttDot').className = 'dot ' + (ok ? 'on' : 'off');
   document.getElementById('mqttTxt').textContent = text;
 }
 
-function setHubUi(on) {
-  hubOnline = on;
-  document.getElementById('hubBadge').className = 'badge ' + (on ? 'on' : 'off');
-  document.getElementById('hubBadge').textContent = on ? 'Online' : 'Offline';
-  document.getElementById('hubDetail').textContent = on
-    ? 'Linked · routing & SMS ready'
-    : 'Not reachable · nodes may still work solo';
-}
-
-function renderDash() {
-  const grid = document.getElementById('nodeGrid');
-  const empty = document.getElementById('nodeEmpty');
-  grid.innerHTML = '';
-  let any = false;
-
-  KNOWN_NODES.forEach(meta => {
-    const st = nodes[meta.id] || { online: false };
-    any = true;
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'node-card' + (st.online ? '' : ' offline');
-    card.onclick = () => openNode(meta.id);
-    card.innerHTML =
-      '<div class="node-emoji">' + meta.emoji + '</div>' +
-      '<div class="node-name">' + meta.name + '</div>' +
-      '<div class="node-id">' + meta.id + (st.mode && st.mode !== '—' ? ' · ' + st.mode : '') + '</div>' +
-      '<div class="node-st ' + (st.online ? 'online' : 'offline') + '">' +
-        (st.online ? 'Online' : 'Offline') +
-      '</div>';
-    grid.appendChild(card);
-  });
-
-  empty.style.display = any ? 'none' : 'block';
-  setHubUi(hubOnline);
-}
-
-function topicCmd(id)    { return 'garage/' + id + '/cmd'; }
-function topicStatus(id) { return 'garage/' + id + '/status'; }
-function topicState(id)  { return 'garage/' + id + '/state'; }
-
 function connectMqtt(user, pass) {
   return new Promise((resolve, reject) => {
-    if (client) {
-      try { client.end(true); } catch (e) {}
-      client = null;
-    }
+    if (client) { try { client.end(true); } catch (e) {} client = null; }
     const c = mqtt.connect(BROKER, {
       username: user,
       password: pass,
@@ -439,35 +489,38 @@ function connectMqtt(user, pass) {
       clean: true
     });
     client = c;
-    const t = setTimeout(() => {
-      reject(new Error('Timeout'));
-      try { c.end(true); } catch (e) {}
-    }, 14000);
+    const t = setTimeout(() => { reject(new Error('Timeout')); try { c.end(true); } catch (e) {} }, 14000);
 
     c.on('connect', () => {
       clearTimeout(t);
-      setMqttUi(true, 'Connected');
+      setMqttUi(true, 'Broker connected');
+      /* Hub only — explicit topics */
       c.subscribe('garage/hub/status');
       c.subscribe('garage/hub/state');
+      /* All nodes */
       c.subscribe('garage/+/status');
       c.subscribe('garage/+/state');
-      /* ask hub / nodes for state */
+      /* Probe */
       c.publish('garage/hub/cmd', JSON.stringify({ cmd: 'ping' }));
       KNOWN_NODES.forEach(n => {
-        c.publish(topicCmd(n.id), JSON.stringify({ cmd: 'ping' }));
+        c.publish('garage/' + n.id + '/cmd', JSON.stringify({ cmd: 'ping' }));
       });
       resolve();
     });
-    c.on('error', err => {
-      clearTimeout(t);
-      setMqttUi(false, 'Error');
-      reject(err);
-    });
+    c.on('error', err => { clearTimeout(t); setMqttUi(false, 'Error'); reject(err); });
     c.on('close', () => setMqttUi(false, 'Disconnected'));
     c.on('offline', () => setMqttUi(false, 'Offline'));
     c.on('reconnect', () => setMqttUi(false, 'Reconnecting…'));
     c.on('message', onMessage);
   });
+}
+
+function parseLink(data) {
+  /* accept link | net | transport | conn */
+  const v = (data.link || data.net || data.transport || data.conn || '').toString().toLowerCase();
+  if (v === 'wifi' || v === 'wi-fi' || v === 'sta') return 'wifi';
+  if (v === 'gprs' || v === 'gsm' || v === 'cellular' || v === 'm95') return 'gprs';
+  return '';
 }
 
 function onMessage(topic, payload) {
@@ -479,72 +532,65 @@ function onMessage(topic, payload) {
   const who = parts[1];
   const kind = parts[2];
 
+  /* —— HUB (real presence only) —— */
   if (who === 'hub') {
-    hubOnline = true;
-    hubLast = Date.now();
-    setHubUi(true);
+    hub.last = Date.now();
+    const lk = parseLink(data);
+    if (lk) hub.link = lk;
+    /* if payload says online:false, force offline */
+    if (data.online === false) {
+      hub.last = 0;
+      hub.online = false;
+    }
+    refreshHubTruth();
+    if (document.getElementById('view-dash').classList.contains('active')) renderDash();
     return;
   }
 
-  /* node topics */
+  /* —— NODE —— */
   if (!nodes[who]) {
-    nodes[who] = { online: false, last: 0, learn: 'idle', door: 0, mode: 'solo' };
-    if (!KNOWN_NODES.find(n => n.id === who)) {
-      KNOWN_NODES.push({ id: who, name: 'Node ' + who, emoji: '📡', kind: 'generic' });
-    }
+    nodes[who] = { online: false, last: 0, learn: 'idle', door: 0, mode: '', link: '' };
   }
-
-  nodes[who].online = true;
   nodes[who].last = Date.now();
+  nodes[who].online = true;
   if (data.door !== undefined) nodes[who].door = data.door;
   if (data.learn) nodes[who].learn = data.learn;
   if (data.mode) nodes[who].mode = data.mode;
-  if (data.target !== undefined && currentNodeId === who) learnTarget = data.target || '';
+  const nl = parseLink(data);
+  if (nl) nodes[who].link = nl;
+  else if (data.mode === 'solo') nodes[who].link = 'wifi';
 
   if (currentNodeId === who) {
     if (data.learn) learnState = data.learn;
     if (data.door !== undefined) activeDoor = data.door;
+    if (data.target !== undefined) learnTarget = data.target || '';
     updateNodeUI();
     if (kind === 'status' && data.msg) toast(data.msg);
   }
 
   if (document.getElementById('view-dash').classList.contains('active')) renderDash();
-  else updateNodeOnlineBadge();
+  else if (currentNodeId === who) updateNodeOnlineBadge();
 }
 
-/* mark offline if no traffic */
 setInterval(() => {
-  const now = Date.now();
-  if (hubOnline && now - hubLast > 90000) {
-    hubOnline = false;
-    setHubUi(false);
-  }
-  let changed = false;
-  Object.keys(nodes).forEach(id => {
-    if (nodes[id].online && now - nodes[id].last > 90000) {
-      nodes[id].online = false;
-      changed = true;
-    }
-  });
-  if (changed && document.getElementById('view-dash').classList.contains('active')) renderDash();
+  refreshHubTruth();
+  if (document.getElementById('view-dash').classList.contains('active')) renderDash();
   if (currentNodeId) updateNodeOnlineBadge();
-}, 10000);
+}, 5000);
 
 function updateNodeOnlineBadge() {
   if (!currentNodeId) return;
   const st = nodes[currentNodeId];
-  const on = st && st.online;
+  const on = st && st.last > 0 && (Date.now() - st.last) < NODE_TTL;
   document.getElementById('nodeDot').className = 'dot ' + (on ? 'on' : 'off');
+  const lk = linkLabel(st.link, st.mode);
   document.getElementById('nodeSub').textContent =
-    (on ? 'Online' : 'Offline') + ' · ' + currentNodeId +
-    (st && st.mode ? ' · ' + st.mode : '');
+    (on ? 'Online' : 'Offline') + ' · ' + currentNodeId + (on && lk ? ' · ' + lk : '');
 }
 
-/* ---------- node controls ---------- */
 function updateNodeUI() {
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 3; i++)
     document.getElementById('tab' + i).className = 'tab' + (i === activeDoor ? ' active' : '');
-  }
   document.getElementById('btnLearn').className =
     'btn-learn' + (learnState !== 'idle' ? ' learning' : '');
   ['up', 'stop', 'down'].forEach(t => {
@@ -560,7 +606,7 @@ function pubCmd(obj) {
     toast('Not connected', true);
     return;
   }
-  client.publish(topicCmd(currentNodeId), JSON.stringify(obj));
+  client.publish('garage/' + currentNodeId + '/cmd', JSON.stringify(obj));
 }
 
 function selectDoor(n) {
@@ -581,40 +627,29 @@ function sendCmd(c) {
   pubCmd({ cmd: c, door: activeDoor });
 }
 
-/* Learn hold 3s */
 (function setupLearn() {
   const btn = document.getElementById('btnLearn');
   const cd = document.getElementById('countdown');
   const cdNum = document.getElementById('cdNum');
   let holdTimer = null, countTimer = null, holding = false, left = 3;
-
   function startHold(e) {
     e.preventDefault();
     if (learnState !== 'idle') {
       pubCmd({ cmd: 'learn_cancel', door: activeDoor });
-      learnState = 'idle';
-      learnTarget = '';
+      learnState = 'idle'; learnTarget = '';
       updateNodeUI();
       toast('Learn cancelled');
       return;
     }
     if (holding) return;
-    holding = true;
-    left = 3;
+    holding = true; left = 3;
     btn.classList.add('holding');
-    cdNum.textContent = '3';
-    cd.classList.add('show');
-    countTimer = setInterval(() => {
-      left--;
-      if (left > 0) cdNum.textContent = left;
-    }, 1000);
+    cdNum.textContent = '3'; cd.classList.add('show');
+    countTimer = setInterval(() => { left--; if (left > 0) cdNum.textContent = left; }, 1000);
     holdTimer = setTimeout(() => {
-      clearInterval(countTimer);
-      cd.classList.remove('show');
-      btn.classList.remove('holding');
-      holding = false;
-      learnState = 'wait_button';
-      updateNodeUI();
+      clearInterval(countTimer); cd.classList.remove('show');
+      btn.classList.remove('holding'); holding = false;
+      learnState = 'wait_button'; updateNodeUI();
       pubCmd({ cmd: 'learn_start', door: activeDoor });
       toast('Choose ▲ ⏹ or ▼');
     }, 3000);
@@ -623,10 +658,8 @@ function sendCmd(c) {
     e.preventDefault();
     if (!holding) return;
     holding = false;
-    clearTimeout(holdTimer);
-    clearInterval(countTimer);
-    cd.classList.remove('show');
-    btn.classList.remove('holding');
+    clearTimeout(holdTimer); clearInterval(countTimer);
+    cd.classList.remove('show'); btn.classList.remove('holding');
   }
   btn.addEventListener('mousedown', startHold);
   btn.addEventListener('mouseup', cancelHold);
@@ -635,7 +668,6 @@ function sendCmd(c) {
   btn.addEventListener('touchend', cancelHold);
 })();
 
-/* ---------- auth ---------- */
 async function doLogin() {
   const user = document.getElementById('user').value.trim();
   const pass = document.getElementById('pass').value;
@@ -651,8 +683,9 @@ async function doLogin() {
   try {
     await connectMqtt(user, pass);
     sessionStorage.setItem('pc_ok', '1');
+    hub.last = 0; /* don't assume hub online until real message */
     showDash();
-    toast('Connected');
+    toast('Connected to broker');
   } catch (e) {
     err.textContent = 'MQTT failed — check network / broker';
     setMqttUi(false, 'Failed');
@@ -666,12 +699,14 @@ function doLogout() {
   if (client) try { client.end(true); } catch (e) {}
   client = null;
   mqttOk = false;
-  hubOnline = false;
-  Object.keys(nodes).forEach(id => { nodes[id].online = false; });
+  hub = { online: false, last: 0, link: '' };
+  Object.keys(nodes).forEach(id => {
+    nodes[id].online = false;
+    nodes[id].last = 0;
+  });
   show('view-login');
 }
 
-/* auto resume */
 if (sessionStorage.getItem('pc_ok') === '1') {
   document.getElementById('pass').value = AUTH_PASS;
   doLogin();
